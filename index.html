@@ -1,0 +1,2716 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omnia Valorant Gauntlet - Pro Graphic Studio</title>
+    <link rel="stylesheet" href="assets/tailwind.css">
+    <link rel="stylesheet" href="assets/fonts.css">
+    <style>
+        body {
+            font-family: 'Barlow Condensed', sans-serif;
+            background-color: #090c10;
+            color: #ece8e1;
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .font-poster {
+            font-family: 'Anton', sans-serif;
+        }
+        canvas {
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(236, 232, 225, 0.12);
+            touch-action: none;
+            user-select: none;
+        }
+        input[type="range"] {
+            accent-color: #ff4655;
+        }
+        button:disabled { opacity: .35; cursor: not-allowed; }
+        button:disabled:hover { background-color: #151c24; border-color: #334155; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1218;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b3643;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff4655;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col lg:flex-row">
+
+    <!-- Sidebar Controlli -->
+    <aside class="w-full lg:w-[410px] bg-[#0e1319] border-b lg:border-b-0 lg:border-r border-slate-800/80 p-5 flex flex-col gap-5 overflow-y-auto lg:h-screen shrink-0">
+
+        <!-- Header Studio -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-[#ece8e1] flex items-center justify-center">
+                    <svg viewBox="0 0 1000 560" class="w-7 h-auto text-[#0e1319]" fill="currentColor">
+                        <path fill-rule="evenodd" d="M245,25 L1000,25 L1000,195 L530,535 L0,535 L0,200 Z M360,195 L605,195 L605,245 L465,365 L280,365 L280,255 Z"/>
+                        <path d="M1000,250 L1000,535 L605,535 Z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-wider uppercase leading-none text-white">OMNIA <span class="text-[#ff4655]">ART DEPT</span></h1>
+                    <p class="font-mono-tech text-[10px] text-slate-400 tracking-widest uppercase mt-0.5">Interactive Suite // v4.0</p>
+                </div>
+            </div>
+            <button onclick="resetAllOffsets()" title="Ripristina posizioni originali" class="font-mono-tech text-[10px] uppercase px-2.5 py-1.5 bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-300 hover:text-white transition">
+                ↺ Reset Layout
+            </button>
+        </div>
+
+        <!-- Progetto: nuovo / apri / salva / undo / redo -->
+        <div class="bg-[#141b23] border border-slate-800 p-2.5 space-y-2">
+            <div class="flex items-center justify-between">
+                <label class="font-mono-tech text-[10px] uppercase tracking-widest text-slate-300 font-bold">Progetto</label>
+                <span id="projStatus" class="font-mono-tech text-[10px] text-slate-500">—</span>
+            </div>
+            <div class="grid grid-cols-5 gap-1">
+                <button onclick="newProject()" title="Nuovo progetto" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">Nuovo</button>
+                <button onclick="openProjectDialog()" title="Apri progetto (.json)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">Apri</button>
+                <button onclick="saveProjectFile()" title="Salva progetto (Ctrl+S)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">Salva</button>
+                <button id="btnUndo" onclick="undo()" title="Annulla (Ctrl+Z)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">↶</button>
+                <button id="btnRedo" onclick="redo()" title="Ripeti (Ctrl+Y)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">↷</button>
+            </div>
+            <input type="file" id="projectOpenInput" accept=".json,application/json" class="hidden">
+        </div>
+
+        <!-- 0. Selettore Modalità Grafica (Annuncio / Roster / Matchday) -->
+        <div>
+            <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Tipo di Grafica</label>
+            <div class="grid grid-cols-3 gap-1 bg-[#151c24] p-1 border border-slate-800">
+                <button id="tab-announce" onclick="setMode('announce')" class="py-2 text-xs font-black uppercase tracking-wider bg-[#ff4655] text-white transition">Annuncio</button>
+                <button id="tab-roster" onclick="setMode('roster')" class="py-2 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white transition">Roster</button>
+                <button id="tab-matchday" onclick="setMode('matchday')" class="py-2 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white transition">Game Serata</button>
+            </div>
+        </div>
+
+        <!-- 1. Formato & Layout -->
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Formato IG</label>
+                <div class="grid grid-cols-2 gap-1 bg-[#151c24] p-1">
+                    <button id="btnPost" onclick="setFormat('post')" class="py-1.5 text-xs font-bold uppercase tracking-wider bg-[#ff4655] text-white transition">Post 4:5</button>
+                    <button id="btnStory" onclick="setFormat('story')" class="py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition">Story 9:16</button>
+                </div>
+            </div>
+            <div id="layoutSelectorWrap">
+                <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Stile Layout</label>
+                <div class="grid grid-cols-2 gap-1 bg-[#151c24] p-1">
+                    <button id="btnLayoutEditorial" onclick="setLayout('editorial')" class="py-1.5 text-xs font-bold uppercase tracking-wider bg-[#ece8e1] text-[#0e1319] transition">Editorial</button>
+                    <button id="btnLayoutPoster" onclick="setLayout('poster')" class="py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition">Impact</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Direzione Artistica (Palette) -->
+        <div>
+            <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Direzione Artistica</label>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="setTheme('paper')" id="theme-paper" class="theme-btn py-2 px-2 text-xs font-bold uppercase border-2 border-[#ff4655] bg-[#ece8e1] text-[#0e1319] tracking-wider">Swiss Paper</button>
+                <button onclick="setTheme('vctDark')" id="theme-vctDark" class="theme-btn py-2 px-2 text-xs font-bold uppercase border border-slate-700 bg-[#121820] text-[#ece8e1] tracking-wider">VCT Dark</button>
+                <button onclick="setTheme('night')" id="theme-night" class="theme-btn py-2 px-2 text-xs font-bold uppercase border border-slate-700 bg-[#0c0a14] text-[#c4b5fd] tracking-wider">Nocturne</button>
+            </div>
+        </div>
+
+        <!-- 3. Livello Immagine (Agente PNG o Mappa - condiviso) -->
+        <div class="bg-[#141b23] border border-slate-800 p-3.5 space-y-3">
+            <div class="flex items-center justify-between">
+                <label class="font-mono-tech text-[10px] uppercase tracking-widest text-[#ff4655] font-bold">01 // Livello Agente o Mappa</label>
+                <button id="btnRemoveImg" onclick="removeSubjectImage()" class="hidden font-mono-tech text-[10px] uppercase text-slate-400 hover:text-[#ff4655] underline">Rimuovi</button>
+            </div>
+
+            <input type="file" id="subjectUpload" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:border-0 file:text-xs file:font-bold file:uppercase file:bg-[#ece8e1] file:text-[#0e1319] hover:file:bg-white cursor-pointer">
+            <p class="font-mono-tech text-[10px] text-slate-400 leading-relaxed">
+                Carica un <strong>PNG trasparente di un Agente</strong> o una <strong>mappa</strong>: puoi trascinarlo direttamente sull'anteprima e usare la rotella per lo zoom.
+            </p>
+
+            <!-- Controlli Immagine (visibili quando caricata) -->
+            <div id="imgControls" class="hidden space-y-2.5 pt-2 border-t border-slate-800">
+                <div class="grid grid-cols-2 gap-1 bg-[#0e1319] p-1">
+                    <button id="modeForeground" onclick="setImgMode('foreground')" class="py-1 text-[11px] font-bold uppercase bg-[#ff4655] text-white">Agente (Davanti)</button>
+                    <button id="modeBackdrop" onclick="setImgMode('backdrop')" class="py-1 text-[11px] font-bold uppercase text-slate-400 hover:text-white">Mappa (Duotone)</button>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block font-mono-tech text-[9px] text-slate-400 uppercase">Zoom</label>
+                        <input type="range" id="imgScale" min="25" max="250" value="105" class="w-full">
+                    </div>
+                    <div>
+                        <label class="block font-mono-tech text-[9px] text-slate-400 uppercase">Sposta X</label>
+                        <input type="range" id="imgX" min="-700" max="700" value="80" class="w-full">
+                    </div>
+                    <div>
+                        <label class="block font-mono-tech text-[9px] text-slate-400 uppercase">Sposta Y</label>
+                        <input type="range" id="imgY" min="-700" max="800" value="60" class="w-full">
+                    </div>
+                </div>
+                <details open class="border border-slate-800 bg-[#0e1319]/60 px-2 py-1">
+                    <summary class="cursor-pointer font-mono-tech text-[10px] uppercase text-slate-400 hover:text-white">Specchia / Ruota / Opacità</summary>
+                    <div id="fx-subject" class="pt-1.5 pb-1 space-y-1.5"></div>
+                </details>
+            </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- PANNELLO A: ANNUNCIO & MULTI-GIORNATA                      -->
+        <!-- ========================================================== -->
+        <div id="panel-announce" class="space-y-4">
+            <div class="space-y-3">
+                <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400">02 // Contenuti Annuncio</label>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Titolo</label>
+                        <input type="text" id="inputTitle" value="GAUNTLET" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                    </div>
+                    <div>
+                        <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Etichetta Top</label>
+                        <input type="text" id="inputKicker" value="VALORANT SERIES" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                    </div>
+                </div>
+
+                <!-- Montepremi -->
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-[#ff4655] uppercase mb-1">Montepremi (Opz.)</label>
+                    <input type="text" id="inputPrize" value="€500 PRIZE POOL" placeholder="es. €500 PRIZE POOL" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                </div>
+
+                <!-- Gestione Giornate di Torneo (Multi-Day) -->
+                <div class="bg-[#141b23] border border-slate-800 p-3 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="font-mono-tech text-[10px] uppercase tracking-widest text-slate-300 font-bold">Giornate di Torneo</label>
+                        <button onclick="addTournamentDay()" class="font-mono-tech text-[10px] uppercase bg-[#ff4655] hover:bg-[#e03846] text-white px-2 py-0.5 font-bold transition">+ Giornata</button>
+                    </div>
+                    <div id="daysContainer" class="space-y-2"></div>
+                </div>
+
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Canale Twitch (Live)</label>
+                    <input type="text" id="inputTwitch" value="TWITCH.TV/OMNIA" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                </div>
+
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Sottotitolo / Regole</label>
+                    <input type="text" id="inputExtra" value="CLIMB THE BRACKET // NO SECOND CHANCES" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                </div>
+
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Call to Action (Footer)</label>
+                    <input type="text" id="inputCta" value="ISCRIZIONI APERTE — LINK IN BIO" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- PANNELLO B: PRESENTAZIONE ROSTER                           -->
+        <!-- ========================================================== -->
+        <div id="panel-roster" class="hidden space-y-3">
+            <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400">02 // Presentazione Roster</label>
+
+            <!-- Scelta Numero Team e Componenti per Team -->
+            <div class="grid grid-cols-2 gap-2.5 bg-[#141b23] border border-slate-800 p-2.5">
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-[#ff4655] uppercase mb-1">Team in Grafica</label>
+                    <select id="rosterTeamCount" onchange="updateRosterStructure()" class="w-full bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-xs font-bold text-white">
+                        <option value="1" selected>1 Team (Focus)</option>
+                        <option value="2">2 Team (Confronto)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-[#ff4655] uppercase mb-1">Componenti / Team</label>
+                    <select id="rosterPlayerCount" onchange="updateRosterStructure()" class="w-full bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-xs font-bold text-white">
+                        <option value="1">1 Giocatore (1v1)</option>
+                        <option value="2">2 Giocatori (Duo)</option>
+                        <option value="3">3 Giocatori (Trio)</option>
+                        <option value="4">4 Giocatori</option>
+                        <option value="5" selected>5 Giocatori (Standard)</option>
+                        <option value="6">6 Giocatori (+ Sub)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Team 1 -->
+            <div class="bg-[#141b23] border border-slate-800 p-2.5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-mono-tech text-[10px] text-[#ff4655] font-bold uppercase">Team 01</span>
+                    <button id="btnRemoveTeamLogo" onclick="removeTeamLogo(0)" class="hidden font-mono-tech text-[10px] uppercase text-slate-400 hover:text-[#ff4655] underline">Rimuovi Logo</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="rosterTeamName" value="OMNIA ESPORTS" placeholder="Nome Team 1" class="bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-xs font-bold tracking-wider text-white">
+                    <input type="text" id="rosterTag" value="SEED #1 // INVITED" placeholder="Tag / Seed" class="bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-xs font-bold tracking-wider text-white">
+                </div>
+                <input type="file" id="teamLogoUpload" accept="image/*" class="w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-[#ece8e1] file:text-[#0e1319] cursor-pointer">
+                <details  class="border border-slate-800 bg-[#0e1319]/60 px-2 py-1">
+                    <summary class="cursor-pointer font-mono-tech text-[10px] uppercase text-slate-400 hover:text-white">Logo: specchia / ruota</summary>
+                    <div id="fx-team1" class="pt-1.5 pb-1 space-y-1.5"></div>
+                </details>
+
+                <div class="flex gap-1">
+                    <select id="teamPresetSel0" class="flex-1 min-w-0 bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-1.5 py-1 text-[11px] font-bold text-slate-200"></select>
+                    <button type="button" onclick="loadTeamPreset(0)" class="px-2 text-[10px] font-bold uppercase bg-[#151c24] border border-slate-700 hover:border-[#ff4655] text-slate-200">Carica</button>
+                    <button type="button" onclick="saveTeamPreset(0)" class="px-2 text-[10px] font-bold uppercase bg-[#ff4655] text-white hover:bg-[#e03846]">Salva</button>
+                    <button type="button" onclick="deleteTeamPreset(0)" title="Elimina preset" class="px-2 text-[10px] font-bold bg-[#151c24] border border-slate-700 hover:border-[#ff4655] text-slate-400">✕</button>
+                </div>
+                <div id="rosterPlayersContainer" class="space-y-1.5 pt-1"></div>
+            </div>
+
+            <!-- Team 2 (visibile solo se 2 Team) -->
+            <div id="rosterTeam2Box" class="hidden bg-[#141b23] border border-slate-800 p-2.5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-mono-tech text-[10px] text-[#ff4655] font-bold uppercase">Team 02</span>
+                    <button id="btnRemoveTeamLogo2" onclick="removeTeamLogo(1)" class="hidden font-mono-tech text-[10px] uppercase text-slate-400 hover:text-[#ff4655] underline">Rimuovi Logo</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="rosterTeam2Name" value="TEAM CHALLENGERS" placeholder="Nome Team 2" class="bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-xs font-bold tracking-wider text-white">
+                    <input type="text" id="rosterTeam2Tag" value="CREATOR SQUAD" placeholder="Tag / Seed" class="bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-xs font-bold tracking-wider text-white">
+                </div>
+                <input type="file" id="teamLogo2Upload" accept="image/*" class="w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-[#ece8e1] file:text-[#0e1319] cursor-pointer">
+                <details  class="border border-slate-800 bg-[#0e1319]/60 px-2 py-1">
+                    <summary class="cursor-pointer font-mono-tech text-[10px] uppercase text-slate-400 hover:text-white">Logo: specchia / ruota</summary>
+                    <div id="fx-team2" class="pt-1.5 pb-1 space-y-1.5"></div>
+                </details>
+
+                <div class="flex gap-1">
+                    <select id="teamPresetSel1" class="flex-1 min-w-0 bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-1.5 py-1 text-[11px] font-bold text-slate-200"></select>
+                    <button type="button" onclick="loadTeamPreset(1)" class="px-2 text-[10px] font-bold uppercase bg-[#151c24] border border-slate-700 hover:border-[#ff4655] text-slate-200">Carica</button>
+                    <button type="button" onclick="saveTeamPreset(1)" class="px-2 text-[10px] font-bold uppercase bg-[#ff4655] text-white hover:bg-[#e03846]">Salva</button>
+                    <button type="button" onclick="deleteTeamPreset(1)" title="Elimina preset" class="px-2 text-[10px] font-bold bg-[#151c24] border border-slate-700 hover:border-[#ff4655] text-slate-400">✕</button>
+                </div>
+                <div id="rosterPlayers2Container" class="space-y-1.5 pt-1"></div>
+            </div>
+
+            <p class="font-mono-tech text-[10px] text-slate-400 leading-relaxed">
+                Tip: clicca la stella <strong class="text-[#ff4655]">★</strong> accanto a un giocatore per metterlo in bella vista come <strong>Content Creator / Ospite</strong>.
+            </p>
+
+            <div>
+                <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Coach / Manager (Opz.)</label>
+                <input type="text" id="rosterCoach" value="COACH: VEXEN" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+            </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- PANNELLO C: GAME DELLA SERATA (MATCHDAY)                   -->
+        <!-- ========================================================== -->
+        <div id="panel-matchday" class="hidden space-y-3">
+            <div class="flex items-center justify-between">
+                <label class="font-mono-tech text-[10px] uppercase tracking-widest text-slate-400">02 // Game della Serata</label>
+                <button onclick="addEveningGame()" class="font-mono-tech text-[10px] uppercase bg-[#ff4655] hover:bg-[#e03846] text-white px-2 py-0.5 font-bold transition">+ Aggiungi Game</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Titolo Serata</label>
+                    <input type="text" id="matchdayTitle" value="GAME DELLA SERATA" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                </div>
+                <div>
+                    <label class="block font-mono-tech text-[10px] text-slate-500 uppercase mb-1">Data / Fase</label>
+                    <input type="text" id="matchdayDate" value="19 DICEMBRE // LIVE" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-sm font-bold tracking-wider text-white">
+                </div>
+            </div>
+
+            <div id="eveningGamesContainer" class="space-y-2.5"></div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- SEZIONE CONDIVISA: SPONSOR, OSPITI SPECIALI & INFO EXTRA   -->
+        <!-- ========================================================== -->
+        <div class="bg-[#141b23] border border-slate-800 p-3.5 space-y-3">
+            <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-[#ff4655] font-bold">03 // Sponsor, Ospiti & Info Extra</label>
+
+            <!-- Sponsor Testo + Logo PNG -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <label class="font-mono-tech text-[10px] text-slate-300 uppercase">Sponsor (Testo e/o Logo PNG)</label>
+                    <button id="btnRemoveSponsorLogo" onclick="removeSponsorLogo()" class="hidden font-mono-tech text-[10px] uppercase text-slate-400 hover:text-[#ff4655] underline">Rimuovi Logo</button>
+                </div>
+                <input type="text" id="inputSponsor" value="" placeholder="es. POWERED BY HYPERX" class="w-full bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-xs font-bold tracking-wider text-white">
+                <input type="file" id="sponsorLogoUpload" accept="image/*" class="w-full text-[11px] text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-[#ece8e1] file:text-[#0e1319] cursor-pointer">
+                <details  class="border border-slate-800 bg-[#0e1319]/60 px-2 py-1">
+                    <summary class="cursor-pointer font-mono-tech text-[10px] uppercase text-slate-400 hover:text-white">Logo: specchia / ruota</summary>
+                    <div id="fx-sponsor" class="pt-1.5 pb-1 space-y-1.5"></div>
+                </details>
+
+                <div class="flex gap-1 pt-1">
+                    <select id="sponsorPresetSel" class="flex-1 min-w-0 bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-1.5 py-1 text-[11px] font-bold text-slate-200"></select>
+                    <button type="button" onclick="loadSponsorPreset()" class="px-2 text-[10px] font-bold uppercase bg-[#151c24] border border-slate-700 hover:border-[#ff4655] text-slate-200">Carica</button>
+                    <button type="button" onclick="saveSponsorPreset()" class="px-2 text-[10px] font-bold uppercase bg-[#ff4655] text-white hover:bg-[#e03846]">Salva</button>
+                    <button type="button" onclick="deleteSponsorPreset()" title="Elimina preset" class="px-2 text-[10px] font-bold bg-[#151c24] border border-slate-700 hover:border-[#ff4655] text-slate-400">✕</button>
+                </div>
+            </div>
+
+            <!-- Ospiti Speciali / Content Creator -->
+            <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+                <label class="block font-mono-tech text-[10px] text-slate-300 uppercase">Ospiti Speciali / Content Creator</label>
+                <div class="grid grid-cols-12 gap-1.5">
+                    <input type="text" id="inputGuestLabel" value="SPECIAL GUESTS" class="col-span-5 bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-[11px] font-mono-tech text-[#ff4655] font-bold">
+                    <input type="text" id="inputGuests" value="" placeholder="es. @CREATOR1 • @CREATOR2" class="col-span-7 bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1.5 text-xs font-bold text-white">
+                </div>
+            </div>
+
+            <!-- Testo Opzionale Informazioni in Più -->
+            <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+                <label class="block font-mono-tech text-[10px] text-slate-300 uppercase">Informazioni Aggiuntive (Opzionale)</label>
+                <textarea id="inputExtraInfo" rows="2" placeholder="es. Check-in ore 17:30 su Discord • Map Pool competitivo • Caster: @Tizio & @Caio" class="w-full bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2.5 py-1.5 text-xs font-semibold text-white resize-none"></textarea>
+            </div>
+        </div>
+
+        <!-- Tipografia: font per sezione -->
+        <div class="bg-[#141b23] border border-slate-800 p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+                <label class="font-mono-tech text-[10px] uppercase tracking-widest text-[#ff4655] font-bold">04 // Tipografia (font per sezione)</label>
+                <button type="button" onclick="resetFonts()" class="font-mono-tech text-[10px] uppercase text-slate-400 hover:text-[#ff4655] underline">Reset</button>
+            </div>
+            <div id="fontGrid" class="grid grid-cols-2 gap-2"></div>
+        </div>
+
+        <!-- 5. Finitura Analogica (Grana & Texture) -->
+        <div class="bg-[#141b23] border border-slate-800 p-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <label class="font-mono-tech text-[10px] uppercase tracking-widest text-slate-300">05 // Grana Pellicola (Film Grain)</label>
+                <span id="grainVal" class="font-mono-tech text-[10px] text-[#ff4655]">14%</span>
+            </div>
+            <input type="range" id="inputGrain" min="0" max="35" value="14" class="w-full">
+        </div>
+
+        <!-- Pulsante Export -->
+        <div class="mt-auto pt-3 border-t border-slate-800 space-y-2">
+            <button onclick="downloadPNG()" class="w-full py-3.5 px-4 bg-[#ff4655] hover:bg-[#e03846] text-white text-xl font-black tracking-widest uppercase transition flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Esporta PNG Alta Qualità
+            </button>
+            <button onclick="exportBoth()" class="w-full py-2.5 px-4 bg-[#ece8e1] hover:bg-white text-[#0e1319] text-base font-black tracking-widest uppercase transition">
+                Esporta Post + Storia
+            </button>
+            <div id="outDirRow" class="hidden flex items-center gap-1.5">
+                <span id="outDirLabel" class="flex-1 min-w-0 truncate font-mono-tech text-[10px] text-slate-400">Cartella: non scelta (verrà chiesta)</span>
+                <button type="button" onclick="chooseOutDir()" class="px-2 py-1 text-[10px] font-bold uppercase bg-[#151c24] border border-slate-700 hover:border-[#ff4655] text-slate-200">Scegli cartella</button>
+            </div>
+            <p id="resLabel" class="font-mono-tech text-center text-[10px] text-slate-400 tracking-wider uppercase">OUTPUT: 1080 × 1350 PX // POST IG</p>
+        </div>
+    </aside>
+
+    <!-- Area Anteprima -->
+    <main class="flex-1 flex flex-col items-center justify-center p-5 lg:p-8 bg-[#06080b] relative overflow-hidden">
+        <!-- Sfondo griglia da scrivania grafica -->
+        <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px); background-size: 48px 48px;"></div>
+
+        <div class="relative z-10 flex flex-col items-center gap-3">
+            <!-- Barra stato Drag & Drop -->
+            <div class="flex items-center gap-3 bg-[#0e1319]/90 border border-slate-800 px-3.5 py-1.5 text-[11px] font-mono-tech text-slate-300">
+                <span class="w-2 h-2 rounded-full bg-[#ff4655] animate-pulse"></span>
+                <span id="dragHint">CLIC = SELEZIONA • TRASCINA = SPOSTA • ANGOLI = RIDIMENSIONA • ALT = NO SNAP • DOPPIO CLIC = RESET</span>
+            </div>
+            <canvas id="graphicCanvas" class="max-h-[82vh] w-auto max-w-full cursor-default"></canvas>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('graphicCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Stato applicazione
+        let currentMode = 'announce';     // 'announce' | 'roster' | 'matchday'
+        let currentFormat = 'post';       // 'post' (1080x1350) | 'story' (1080x1920)
+        let currentLayout = 'editorial';  // 'editorial' | 'poster'
+        let currentTheme = 'paper';       // 'paper' | 'vctDark' | 'night'
+        let subjectImg = null;
+        let subjectMode = 'foreground';   // 'foreground' (Agente PNG) | 'backdrop' (Mappa Duotone)
+        let teamLogoImg = null;
+        let teamLogo2Img = null;
+        let sponsorLogoImg = null;
+
+        // =========================================================================
+        // MOTORE DRAG & DROP INTERATTIVO SU CANVAS
+        // =========================================================================
+        let elementOffsets = {}; // es. { 'hero': { x: 0, y: 0 }, ... }
+        let hitBoxes = [];       // [{ id, label, x, y, w, h }]
+        let hoveredId = null;
+        let draggingId = null;
+        let dragStartCanvas = { x: 0, y: 0 };
+        let dragStartOffset = { x: 0, y: 0 };
+
+        function getOffset(id) {
+            if (!elementOffsets[id]) elementOffsets[id] = { x: 0, y: 0, s: 1 };
+            return elementOffsets[id];
+        }
+
+        function resetAllOffsets() {
+            elementOffsets = {};
+            if (subjectImg) {
+                document.getElementById('imgX').value = 80;
+                document.getElementById('imgY').value = 60;
+                document.getElementById('imgScale').value = 105;
+            }
+            renderGraphic();
+        }
+
+        // Helper per disegnare un blocco trascinabile e registrarne l'area cliccabile
+        function withDraggable(id, label, x, y, w, h, drawFn) {
+            const off = getOffset(id);
+            ctx.save();
+            ctx.translate(off.x, off.y);
+            if (off.s !== 1) {
+                ctx.translate(x, y);
+                ctx.scale(off.s, off.s);
+                ctx.translate(-x, -y);
+            }
+            drawFn();
+            ctx.restore();
+            hitBoxes.push({
+                id,
+                label,
+                x: x + off.x,
+                y: y + off.y,
+                w: w * off.s,
+                h: h * off.s
+            });
+        }
+
+        // Stato Multi-Giornata (default 1 giornata, espandibile fino a 4)
+        let tournamentDays = [
+            { date: '19 DICEMBRE', time: '18:00 CET', label: 'DAY 1 — GAUNTLET START' }
+        ];
+
+        // Stato Roster dinamico (fino a 2 team, da 1 a 6 componenti per team + flag Creator/Guest)
+        let rosterPlayers = [
+            { name: 'KAIROS', role: 'DUELIST', isCreator: true },
+            { name: 'NYX', role: 'INITIATOR', isCreator: false },
+            { name: 'VORTEX', role: 'CONTROLLER', isCreator: false },
+            { name: 'SABLE', role: 'SENTINEL', isCreator: false },
+            { name: 'RIVEN', role: 'FLEX / IGL', isCreator: false },
+            { name: 'ECHO', role: 'SUB', isCreator: false }
+        ];
+        let rosterPlayers2 = [
+            { name: 'DRAKE_TV', role: 'CREATOR', isCreator: true },
+            { name: 'LYRA', role: 'DUELIST', isCreator: true },
+            { name: 'KRONOS', role: 'CONTROLLER', isCreator: false },
+            { name: 'ZED', role: 'INITIATOR', isCreator: false },
+            { name: 'MIRA', role: 'SENTINEL', isCreator: false },
+            { name: 'NOVA', role: 'SUB', isCreator: false }
+        ];
+
+        // Stato Game della Serata (Matchday)
+        let eveningGames = [
+            { time: '18:00', meta: 'GAME 01 // BO1 • ASCENT', teamA: 'TEAM ALPHA', scoreA: '', teamB: 'TEAM BRAVO', scoreB: '', featured: false },
+            { time: '19:15', meta: 'GAME 02 // BO1 • HAVEN', teamA: 'TEAM DELTA', scoreA: '', teamB: 'CREATOR SQUAD', scoreB: '', featured: false },
+            { time: '20:30', meta: 'MAIN EVENT // BO3', teamA: 'OMNIA ESPORTS', scoreA: '', teamB: 'WINNER G2', scoreB: '', featured: true }
+        ];
+
+        // Offscreen canvas per la grana fotografica
+        let grainCanvas = null;
+
+        const themes = {
+            paper: {
+                bg: '#ECE8E1',
+                ink: '#0F1419',
+                inkSoft: 'rgba(15, 20, 25, 0.55)',
+                grid: 'rgba(15, 20, 25, 0.09)',
+                accent: '#FF4655',
+                accentText: '#ECE8E1',
+                surface: '#0F1419',
+                surfaceText: '#ECE8E1',
+                twitch: '#9146FF',
+                isLight: true
+            },
+            vctDark: {
+                bg: '#0E141B',
+                ink: '#ECE8E1',
+                inkSoft: 'rgba(236, 232, 225, 0.58)',
+                grid: 'rgba(236, 232, 225, 0.07)',
+                accent: '#FF4655',
+                accentText: '#0E141B',
+                surface: '#ECE8E1',
+                surfaceText: '#0E141B',
+                twitch: '#9146FF',
+                isLight: false
+            },
+            night: {
+                bg: '#0A090F',
+                ink: '#F8FAFC',
+                inkSoft: 'rgba(248, 250, 252, 0.55)',
+                grid: 'rgba(167, 139, 250, 0.09)',
+                accent: '#9146FF',
+                accentText: '#FFFFFF',
+                surface: '#191528',
+                surfaceText: '#F8FAFC',
+                twitch: '#FF4655',
+                isLight: false
+            }
+        };
+
+        function buildGrainTexture() {
+            const gCanvas = document.createElement('canvas');
+            gCanvas.width = 512;
+            gCanvas.height = 512;
+            const gCtx = gCanvas.getContext('2d');
+            const imgData = gCtx.createImageData(512, 512);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const v = Math.random() * 255;
+                data[i] = v;
+                data[i + 1] = v;
+                data[i + 2] = v;
+                data[i + 3] = 255;
+            }
+            gCtx.putImageData(imgData, 0, 0);
+            grainCanvas = gCanvas;
+        }
+
+        // ---- Tipografia: font selezionabile per sezione ----
+        const FONT_LIST = {
+            anton: { css: '"Anton", sans-serif', label: 'Anton (Poster)' },
+            barlow: { css: '"Barlow Condensed", sans-serif', label: 'Barlow Condensed' },
+            mono: { css: '"JetBrains Mono", monospace', label: 'JetBrains Mono (Tech)' }
+        };
+        const FONT_ROLES = [
+            { id: 'title', label: 'Titolo' },
+            { id: 'subtitle', label: 'Sottotitolo / Meta' },
+            { id: 'kicker', label: 'Etichetta & Premi' },
+            { id: 'dates', label: 'Date & Orari' },
+            { id: 'cta', label: 'Call to Action' },
+            { id: 'twitch', label: 'Twitch' },
+            { id: 'guests', label: 'Ospiti Speciali' },
+            { id: 'info', label: 'Info Extra' },
+            { id: 'sponsor', label: 'Sponsor' },
+            { id: 'players', label: 'Team & Giocatori' }
+        ];
+        let fontChoice = {};
+
+        function refreshFontChoice() {
+            FONT_ROLES.forEach(r => {
+                const el = document.getElementById('font-' + r.id);
+                fontChoice[r.id] = el ? el.value : 'auto';
+            });
+        }
+
+        // Riscrive una stringa font canvas ("700 20px ...") con la famiglia scelta per il ruolo
+        function F(role, str) {
+            const c = fontChoice[role];
+            const f = FONT_LIST[c];
+            if (!f) return str;
+            const m = str.match(/^(\d+)\s+(\S+)\s+/);
+            if (!m) return str;
+            let w = parseInt(m[1]);
+            if (c === 'anton') w = 400;
+            else if (c === 'barlow') w = w < 600 ? 700 : Math.min(900, w);
+            else w = Math.min(700, Math.max(400, w));
+            return `${w} ${m[2]} ${f.css}`;
+        }
+
+        function buildFontControls() {
+            const grid = document.getElementById('fontGrid');
+            if (!grid) return;
+            grid.innerHTML = FONT_ROLES.map(r => `
+                <div>
+                    <label class="block font-mono-tech text-[9px] text-slate-400 uppercase mb-0.5">${r.label}</label>
+                    <select id="font-${r.id}" onchange="renderGraphic()" class="w-full bg-[#0e1319] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-1.5 py-1 text-[11px] font-bold text-slate-200">
+                        <option value="auto">Originale</option>
+                        ${Object.entries(FONT_LIST).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('')}
+                    </select>
+                </div>`).join('');
+        }
+
+        function resetFonts() {
+            FONT_ROLES.forEach(r => { const el = document.getElementById('font-' + r.id); if (el) el.value = 'auto'; });
+            renderGraphic();
+        }
+
+        // ---- Trasformazioni immagini: specchia, ruota, opacità ----
+        const FX_KEYS = ['subject', 'team1', 'team2', 'sponsor'];
+        const defaultFx = () => {
+            const o = {};
+            FX_KEYS.forEach(k => { o[k] = { rot: 0, flipH: false, flipV: false, op: 100 }; });
+            return o;
+        };
+        let imgFx = defaultFx();
+
+        function drawImageFx(img, key, dx, dy, dw, dh) {
+            const f = imgFx[key];
+            if (!f || (!f.rot && !f.flipH && !f.flipV && f.op === 100)) {
+                ctx.drawImage(img, dx, dy, dw, dh);
+                return;
+            }
+            ctx.save();
+            ctx.globalAlpha *= f.op / 100;
+            ctx.translate(dx + dw / 2, dy + dh / 2);
+            ctx.rotate(f.rot * Math.PI / 180);
+            ctx.scale(f.flipH ? -1 : 1, f.flipV ? -1 : 1);
+            ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+            ctx.restore();
+        }
+
+        function renderFxControls() {
+            FX_KEYS.forEach(key => {
+                const box = document.getElementById('fx-' + key);
+                if (!box) return;
+                const f = imgFx[key];
+                const on = 'bg-[#ff4655] text-white border-[#ff4655]';
+                const off = 'bg-[#0e1319] text-slate-300 border-slate-700 hover:text-white';
+                box.innerHTML = `
+                    <div class="grid grid-cols-3 gap-1">
+                        <button type="button" onclick="toggleFx('${key}','flipH')" class="py-1 text-[10px] font-bold uppercase border ${f.flipH ? on : off}">↔ Specchia</button>
+                        <button type="button" onclick="toggleFx('${key}','flipV')" class="py-1 text-[10px] font-bold uppercase border ${f.flipV ? on : off}">↕ Capovolgi</button>
+                        <button type="button" onclick="resetFx('${key}')" class="py-1 text-[10px] font-bold uppercase border bg-[#0e1319] text-slate-400 border-slate-700 hover:text-white">↺ Reset</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-mono-tech text-[9px] text-slate-400 uppercase">Rotazione <span id="fxlab-${key}-rot" class="text-[#ff4655]">${f.rot}°</span></label>
+                            <input type="range" min="-180" max="180" value="${f.rot}" oninput="setFx('${key}','rot',this.value)" class="w-full">
+                        </div>
+                        <div>
+                            <label class="block font-mono-tech text-[9px] text-slate-400 uppercase">Opacità <span id="fxlab-${key}-op" class="text-[#ff4655]">${f.op}%</span></label>
+                            <input type="range" min="10" max="100" value="${f.op}" oninput="setFx('${key}','op',this.value)" class="w-full">
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function setFx(key, prop, val) {
+            imgFx[key][prop] = parseInt(val);
+            const lab = document.getElementById(`fxlab-${key}-${prop}`);
+            if (lab) lab.textContent = prop === 'rot' ? `${imgFx[key].rot}°` : `${imgFx[key].op}%`;
+            renderGraphic();
+        }
+
+        function toggleFx(key, prop) {
+            imgFx[key][prop] = !imgFx[key][prop];
+            renderFxControls();
+            renderGraphic();
+        }
+
+        function resetFx(key) {
+            imgFx[key] = { rot: 0, flipH: false, flipV: false, op: 100 };
+            renderFxControls();
+            renderGraphic();
+        }
+
+        function drawOmniaLogo(ctx, x, y, width, color) {
+            const scale = width / 1000;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            ctx.fillStyle = color;
+
+            ctx.beginPath();
+            ctx.moveTo(245, 25);
+            ctx.lineTo(1000, 25);
+            ctx.lineTo(1000, 195);
+            ctx.lineTo(530, 535);
+            ctx.lineTo(0, 535);
+            ctx.lineTo(0, 200);
+            ctx.closePath();
+
+            ctx.moveTo(360, 195);
+            ctx.lineTo(605, 195);
+            ctx.lineTo(605, 245);
+            ctx.lineTo(465, 365);
+            ctx.lineTo(280, 365);
+            ctx.lineTo(280, 255);
+            ctx.closePath();
+            ctx.fill('evenodd');
+
+            ctx.beginPath();
+            ctx.moveTo(1000, 250);
+            ctx.lineTo(1000, 535);
+            ctx.lineTo(605, 535);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawTwitchIcon(ctx, x, y, size, color) {
+            const s = size / 24;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(s, s);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(3, 1); ctx.lineTo(22, 1); ctx.lineTo(22, 14);
+            ctx.lineTo(16, 20); ctx.lineTo(11, 20); ctx.lineTo(7, 23);
+            ctx.lineTo(7, 20); ctx.lineTo(2, 20); ctx.lineTo(2, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(6, 4, 13, 10);
+            ctx.fillStyle = color;
+            ctx.fillRect(10, 6.5, 2, 5);
+            ctx.fillRect(14.5, 6.5, 2, 5);
+            ctx.restore();
+        }
+
+        function drawCrosshair(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - size, y); ctx.lineTo(x + size, y);
+            ctx.moveTo(x, y - size); ctx.lineTo(x, y + size);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawHalftoneBlock(ctx, x, y, w, h, color, step = 14) {
+            ctx.save();
+            ctx.fillStyle = color;
+            for (let gx = x; gx < x + w; gx += step) {
+                for (let gy = y; gy < y + h; gy += step) {
+                    const progress = (gx - x) / w;
+                    const r = Math.max(0.8, (1 - progress) * 3.2);
+                    ctx.beginPath();
+                    ctx.arc(gx, gy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        // Disegna l'immagine caricata dall'utente (Agente o Mappa Duotone) e registra la hitbox
+        function drawSubjectLayer(ctx, W, H, t, isBackdrop) {
+            if (!subjectImg) return;
+            const scaleVal = parseInt(document.getElementById('imgScale').value) / 100;
+            const offsetX = parseInt(document.getElementById('imgX').value);
+            const offsetY = parseInt(document.getElementById('imgY').value);
+
+            ctx.save();
+            if (isBackdrop) {
+                const imgRatio = subjectImg.width / subjectImg.height;
+                const canvasRatio = W / H;
+                let drawW, drawH;
+                if (imgRatio > canvasRatio) {
+                    drawH = H * scaleVal;
+                    drawW = drawH * imgRatio;
+                } else {
+                    drawW = W * scaleVal;
+                    drawH = drawW / imgRatio;
+                }
+                const dx = (W - drawW) / 2 + offsetX;
+                const dy = (H - drawH) / 2 + offsetY;
+
+                ctx.filter = 'grayscale(100%) contrast(135%) brightness(85%)';
+                ctx.globalAlpha = t.isLight ? 0.22 : 0.34;
+                drawImageFx(subjectImg, 'subject', dx, dy, drawW, drawH);
+                ctx.filter = 'none';
+
+                ctx.globalCompositeOperation = t.isLight ? 'multiply' : 'screen';
+                ctx.fillStyle = t.isLight ? 'rgba(236, 232, 225, 0.3)' : 'rgba(255, 70, 85, 0.14)';
+                ctx.fillRect(0, 0, W, H);
+
+                hitBoxes.push({ id: 'subject', label: 'MAPPA SFONDO (ROTELLA = ZOOM)', x: Math.max(0, dx), y: Math.max(0, dy), w: Math.min(W, drawW), h: Math.min(H, drawH) });
+            } else {
+                const baseW = W * 0.85 * scaleVal;
+                const baseH = baseW * (subjectImg.height / subjectImg.width);
+                const dx = (W - baseW) / 2 + offsetX;
+                const dy = (H - baseH) / 2 + offsetY;
+
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                ctx.shadowBlur = 40;
+                ctx.shadowOffsetX = -12;
+                ctx.shadowOffsetY = 18;
+                drawImageFx(subjectImg, 'subject', dx, dy, baseW, baseH);
+
+                hitBoxes.push({ id: 'subject', label: 'AGENTE PNG (ROTELLA = ZOOM)', x: dx, y: dy, w: baseW, h: baseH });
+            }
+            ctx.restore();
+        }
+
+        function drawSwissGrid(ctx, W, H, t, pad) {
+            ctx.save();
+            ctx.strokeStyle = t.grid;
+            ctx.lineWidth = 1.5;
+
+            ctx.strokeRect(pad, pad, W - pad * 2, H - pad * 2);
+
+            const col1 = pad + (W - pad * 2) * 0.33;
+            const col2 = pad + (W - pad * 2) * 0.68;
+            ctx.beginPath();
+            ctx.moveTo(col1, pad); ctx.lineTo(col1, H - pad);
+            ctx.moveTo(col2, pad); ctx.lineTo(col2, H - pad);
+            ctx.stroke();
+
+            drawCrosshair(ctx, pad, pad, 12, t.accent);
+            drawCrosshair(ctx, W - pad, pad, 12, t.accent);
+            drawCrosshair(ctx, pad, H - pad, 12, t.accent);
+            drawCrosshair(ctx, W - pad, H - pad, 12, t.accent);
+            ctx.restore();
+        }
+
+        function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
+            const words = text.split(/\s+/);
+            let line = '';
+            let lines = [];
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line ? line + ' ' + words[n] : words[n];
+                if (ctx.measureText(testLine).width > maxWidth && line) {
+                    lines.push(line);
+                    line = words[n];
+                    if (lines.length >= maxLines - 1) {
+                        line = words.slice(n).join(' ');
+                        break;
+                    }
+                } else {
+                    line = testLine;
+                }
+            }
+            if (line) lines.push(line);
+            lines.slice(0, maxLines).forEach((l, i) => {
+                ctx.fillText(l, x, y + i * lineHeight, maxWidth);
+            });
+            return lines.length;
+        }
+
+        function drawSponsorRight(ctx, rightX, centerY, maxW, maxH, t, fallbackLabel, fallbackValue) {
+            const sponsorText = (document.getElementById('inputSponsor').value || '').trim().toUpperCase();
+            ctx.save();
+            if (sponsorLogoImg) {
+                const ratio = sponsorLogoImg.width / sponsorLogoImg.height;
+                let dh = maxH;
+                let dw = dh * ratio;
+                if (dw > maxW) {
+                    dw = maxW;
+                    dh = dw / ratio;
+                }
+                const dx = rightX - dw;
+                const dy = centerY - dh / 2;
+                drawImageFx(sponsorLogoImg, 'sponsor', dx, dy, dw, dh);
+                if (sponsorText) {
+                    ctx.fillStyle = t.inkSoft;
+                    ctx.font = F('sponsor', '700 15px "JetBrains Mono", monospace');
+                    ctx.textAlign = 'right';
+                    ctx.fillText(sponsorText, dx - 14, centerY + 6);
+                }
+            } else if (sponsorText) {
+                ctx.textAlign = 'right';
+                ctx.fillStyle = t.inkSoft;
+                ctx.font = F('sponsor', '600 14px "JetBrains Mono", monospace');
+                ctx.fillText('OFFICIAL PARTNER', rightX, centerY - 8);
+                ctx.fillStyle = t.ink;
+                ctx.font = F('sponsor', '800 28px "Barlow Condensed", sans-serif');
+                ctx.fillText(sponsorText, rightX, centerY + 22);
+            } else if (fallbackLabel || fallbackValue) {
+                ctx.textAlign = 'right';
+                if (fallbackLabel) {
+                    ctx.fillStyle = t.inkSoft;
+                    ctx.font = F('sponsor', '600 14px "JetBrains Mono", monospace');
+                    ctx.fillText(fallbackLabel, rightX, centerY - 8);
+                }
+                if (fallbackValue) {
+                    ctx.fillStyle = t.ink;
+                    ctx.font = F('sponsor', '800 28px "Barlow Condensed", sans-serif');
+                    ctx.fillText(fallbackValue, rightX, centerY + 22);
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawGuestsBar(ctx, x, y, w, h, t) {
+            const guests = (document.getElementById('inputGuests').value || '').trim().toUpperCase();
+            if (!guests) return;
+            const label = (document.getElementById('inputGuestLabel').value || 'SPECIAL GUESTS').trim().toUpperCase();
+
+            withDraggable('guestsBar', 'OSPITI SPECIALI', x, y, w, h, () => {
+                ctx.fillStyle = t.accent;
+                ctx.fillRect(x, y, w, h);
+
+                const tagW = Math.min(250, Math.max(180, label.length * 14 + 44));
+                ctx.fillStyle = t.surface;
+                ctx.fillRect(x, y, tagW, h);
+
+                ctx.fillStyle = t.surfaceText;
+                ctx.font = F('guests', '700 18px "JetBrains Mono", monospace');
+                ctx.textAlign = 'center';
+                ctx.fillText(`★ ${label}`, x + tagW / 2, y + h * 0.62, tagW - 16);
+
+                ctx.fillStyle = t.accentText;
+                ctx.font = F('guests', '900 32px "Barlow Condensed", sans-serif');
+                ctx.textAlign = 'left';
+                ctx.fillText(guests, x + tagW + 24, y + h * 0.68, w - tagW - 44);
+            });
+        }
+
+        function drawExtraInfoBox(ctx, x, y, w, h, t) {
+            const info = (document.getElementById('inputExtraInfo').value || '').trim().toUpperCase();
+            if (!info) return;
+            withDraggable('extraInfo', 'INFO AGGIUNTIVE', x, y, w, h, () => {
+                ctx.fillStyle = t.isLight ? 'rgba(15,20,25,0.06)' : 'rgba(236,232,225,0.06)';
+                ctx.fillRect(x, y, w, h);
+                ctx.fillStyle = t.accent;
+                ctx.fillRect(x, y, 6, h);
+
+                ctx.fillStyle = t.ink;
+                ctx.font = F('info', '600 18px "JetBrains Mono", monospace');
+                ctx.textAlign = 'left';
+                drawWrappedText(ctx, `INFO // ${info}`, x + 20, y + 25, w - 36, 23, 2);
+            });
+        }
+
+        function renderGraphic(isExport = false) {
+            if (!isExport) scheduleCommit();
+            refreshFontChoice();
+            const isStory = currentFormat === 'story';
+            const W = 1080;
+            const H = isStory ? 1920 : 1350;
+            canvas.width = W;
+            canvas.height = H;
+
+            hitBoxes = [];
+            const t = themes[currentTheme];
+            const pad = 54;
+
+            // 1. Sfondo Base
+            ctx.fillStyle = t.bg;
+            ctx.fillRect(0, 0, W, H);
+
+            // 2. Eventuale Mappa di Sfondo Duotone
+            if (subjectImg && subjectMode === 'backdrop') {
+                drawSubjectLayer(ctx, W, H, t, true);
+            }
+
+            // 3. Griglia Editoriale Svizzera
+            drawSwissGrid(ctx, W, H, t, pad);
+
+            // 4. Retino Halftone decorativo
+            drawHalftoneBlock(ctx, pad + 2, isStory ? 280 : 190, 260, isStory ? 420 : 320, t.isLight ? 'rgba(15,20,25,0.08)' : 'rgba(255,70,85,0.14)', 15);
+
+            // Smistamento render in base alla modalità
+            if (currentMode === 'announce') {
+                renderAnnounceMode(W, H, t, pad, isStory);
+            } else if (currentMode === 'roster') {
+                renderRosterMode(W, H, t, pad, isStory);
+            } else if (currentMode === 'matchday') {
+                renderMatchdayMode(W, H, t, pad, isStory);
+            }
+
+            // 5. FINITURA PRO: GRANA PELLICOLA (FILM GRAIN)
+            const grainOpacity = parseInt(document.getElementById('inputGrain').value) / 100;
+            if (grainOpacity > 0 && grainCanvas) {
+                ctx.save();
+                ctx.globalAlpha = grainOpacity;
+                ctx.globalCompositeOperation = 'overlay';
+                const pattern = ctx.createPattern(grainCanvas, 'repeat');
+                ctx.fillStyle = pattern;
+                ctx.fillRect(0, 0, W, H);
+                ctx.restore();
+            }
+
+            // 6. OVERLAY INTERATTIVO (solo in anteprima, MAI nell'export PNG)
+            if (!isExport) {
+                drawEditorOverlay(W, H);
+                const activeId = draggingId || hoveredId;
+                if (activeId) {
+                    const box = [...hitBoxes].reverse().find(b => b.id === activeId);
+                    if (box) {
+                        ctx.save();
+                        ctx.strokeStyle = draggingId ? '#00F0FF' : '#FF4655';
+                        ctx.lineWidth = draggingId ? 3.5 : 2.5;
+                        ctx.setLineDash(draggingId ? [] : [10, 6]);
+                        ctx.strokeRect(box.x, box.y, box.w, box.h);
+
+                        // Badge etichetta elemento
+                        const tagText = draggingId ? `SPOSTANDO: ${box.label}` : `TRASCINA: ${box.label}`;
+                        ctx.font = '700 16px "JetBrains Mono", monospace';
+                        const tw = ctx.measureText(tagText).width + 20;
+                        const ty = Math.max(8, box.y - 32);
+                        const tx = Math.max(8, Math.min(W - tw - 8, box.x));
+                        ctx.fillStyle = draggingId ? '#00F0FF' : '#FF4655';
+                        ctx.fillRect(tx, ty, tw, 26);
+                        ctx.fillStyle = draggingId ? '#090C10' : '#FFFFFF';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(tagText, tx + 10, ty + 18);
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // RENDER 1: ANNUNCIO & MULTI-GIORNATA
+        // =========================================================================
+        function renderAnnounceMode(W, H, t, pad, isStory) {
+            const titleText = (document.getElementById('inputTitle').value || 'GAUNTLET').toUpperCase();
+            const kickerText = (document.getElementById('inputKicker').value || 'VALORANT SERIES').toUpperCase();
+            const prizeText = (document.getElementById('inputPrize').value || '').trim().toUpperCase();
+            const sponsorText = (document.getElementById('inputSponsor').value || '').trim().toUpperCase();
+            const twitchText = (document.getElementById('inputTwitch').value || 'TWITCH.TV/OMNIA').toUpperCase();
+            const extraText = (document.getElementById('inputExtra').value || '').toUpperCase();
+            const ctaText = (document.getElementById('inputCta').value || '').toUpperCase();
+            const hasGuests = (document.getElementById('inputGuests').value || '').trim().length > 0;
+            const hasExtraInfo = (document.getElementById('inputExtraInfo').value || '').trim().length > 0;
+
+            const days = tournamentDays.length > 0 ? tournamentDays : [{ date: '19 DICEMBRE', time: '18:00 CET', label: 'GAUNTLET' }];
+            const isMultiDay = days.length > 1;
+
+            if (currentLayout === 'editorial') {
+                // TOP BAR - Logo Omnia trascinabile
+                withDraggable('omniaLogo', 'LOGO OMNIA', pad + 18, pad + 20, 390, 90, () => {
+                    drawOmniaLogo(ctx, pad + 24, pad + 26, 138, t.ink);
+                    ctx.fillStyle = t.ink;
+                    ctx.font = '700 22px "JetBrains Mono", monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('OMNIA // ORG', pad + 185, pad + 62);
+                    ctx.fillStyle = t.inkSoft;
+                    ctx.font = '400 18px "JetBrains Mono", monospace';
+                    ctx.fillText('TOURNAMENT DIVISION', pad + 185, pad + 90);
+                });
+
+                // Tag + Prize in alto a destra
+                withDraggable('kickerBadge', 'BADGE & PRIZE', W - pad - 280, pad + 26, 256, prizeText ? 86 : 44, () => {
+                    ctx.fillStyle = t.accent;
+                    ctx.fillRect(W - pad - 280, pad + 26, 256, 44);
+                    ctx.fillStyle = t.accentText;
+                    ctx.font = F('kicker', '700 22px "JetBrains Mono", monospace');
+                    ctx.textAlign = 'center';
+                    ctx.fillText(kickerText, W - pad - 152, pad + 56, 240);
+
+                    if (prizeText) {
+                        ctx.fillStyle = t.ink;
+                        ctx.fillRect(W - pad - 280, pad + 76, 256, 34);
+                        ctx.fillStyle = t.bg;
+                        ctx.font = F('kicker', '700 17px "JetBrains Mono", monospace');
+                        ctx.fillText(`★ ${prizeText}`, W - pad - 152, pad + 99, 240);
+                    }
+                });
+
+                const headerBottom = pad + 128;
+                ctx.strokeStyle = t.ink;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(pad, headerBottom);
+                ctx.lineTo(W - pad, headerBottom);
+                ctx.stroke();
+
+                // BLOCCO TIPOGRAFICO GIGANTE
+                const extraStackCount = (hasGuests ? 1 : 0) + (hasExtraInfo ? 1 : 0);
+                const heroY = isStory
+                    ? (isMultiDay ? 465 : 530) - extraStackCount * 24
+                    : (isMultiDay ? 345 : 385) - extraStackCount * 22;
+                const titleFontSize = isStory ? 235 : (extraStackCount > 0 ? 185 : 205);
+
+                withDraggable('heroTitle', 'TITOLO PRINCIPALE', pad, heroY - titleFontSize * 0.9, W - pad * 2, titleFontSize + 50, () => {
+                    ctx.font = F('title', `400 ${titleFontSize}px "Anton", sans-serif`);
+                    ctx.textAlign = 'left';
+                    ctx.strokeStyle = t.isLight ? 'rgba(15, 20, 25, 0.10)' : 'rgba(236, 232, 225, 0.08)';
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeText(titleText, pad + 18, heroY - (isStory ? 170 : 132));
+                    ctx.strokeText(titleText, pad + 18, heroY + (isStory ? 175 : 138));
+
+                    ctx.fillStyle = t.ink;
+                    ctx.fillText(titleText, pad + 18, heroY);
+
+                    ctx.fillStyle = t.accent;
+                    ctx.fillRect(pad, heroY + 22, 440, 14);
+                });
+
+                if (!subjectImg || subjectMode === 'backdrop') {
+                    ctx.save();
+                    ctx.globalAlpha = t.isLight ? 0.07 : 0.09;
+                    drawOmniaLogo(ctx, W - 490, heroY - 90, 560, t.accent);
+                    ctx.restore();
+                }
+
+                // Soggetto Agente PNG (davanti al titolo)
+                if (subjectImg && subjectMode === 'foreground') {
+                    drawSubjectLayer(ctx, W, H, t, false);
+                }
+
+                // Calcolo impilamento dal basso verso l'alto
+                let cursorBottom = H - pad - 68;
+
+                const infoH = 60;
+                if (hasExtraInfo) {
+                    cursorBottom -= infoH;
+                    drawExtraInfoBox(ctx, pad, cursorBottom, W - pad * 2, infoH, t);
+                    cursorBottom -= 16;
+                }
+
+                const twH = 108;
+                const twY = cursorBottom - twH;
+                cursorBottom = twY - 18;
+
+                const guestH = 58;
+                if (hasGuests) {
+                    cursorBottom -= guestH;
+                    drawGuestsBar(ctx, pad, cursorBottom, W - pad * 2, guestH, t);
+                    cursorBottom -= 18;
+                }
+
+                // SEZIONE SCHEDULE / DATE
+                const cardH = isMultiDay
+                    ? (isStory ? Math.min(440, days.length * 106 + 32) : Math.min(285, days.length * 72 + 24))
+                    : (isStory ? 225 : 178);
+                const lowerY = cursorBottom - cardH;
+
+                withDraggable('scheduleCard', 'BLOCCO DATE', pad, lowerY - (extraText ? 38 : 0), W - pad * 2, cardH + (extraText ? 38 : 0), () => {
+                    if (extraText) {
+                        ctx.fillStyle = t.ink;
+                        ctx.font = F('subtitle', '700 20px "JetBrains Mono", monospace');
+                        ctx.textAlign = 'left';
+                        ctx.fillText(`// ${extraText}`, pad + 24, lowerY - 16, W - pad * 2 - 48);
+                    }
+
+                    ctx.fillStyle = t.surface;
+                    ctx.fillRect(pad, lowerY, W - pad * 2, cardH);
+
+                    ctx.fillStyle = t.accent;
+                    ctx.fillRect(pad, lowerY, 22, cardH);
+
+                    if (!isMultiDay) {
+                        const d = days[0];
+                        ctx.fillStyle = t.surfaceText;
+                        ctx.font = F('dates', `400 ${isStory ? 110 : 94}px "Anton", sans-serif`);
+                        ctx.textAlign = 'left';
+                        ctx.fillText((d.date || '19 DICEMBRE').toUpperCase(), pad + 54, lowerY + cardH * 0.65, W - pad * 2 - 380);
+
+                        const splitX = W - pad - 310;
+                        ctx.strokeStyle = t.isLight ? 'rgba(236,232,225,0.22)' : 'rgba(15,20,25,0.22)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(splitX, lowerY + 24);
+                        ctx.lineTo(splitX, lowerY + cardH - 24);
+                        ctx.stroke();
+
+                        ctx.fillStyle = t.accent;
+                        ctx.font = '700 18px "JetBrains Mono", monospace';
+                        ctx.fillText('START TIME', splitX + 32, lowerY + cardH * 0.34);
+
+                        ctx.fillStyle = t.surfaceText;
+                        ctx.font = F('dates', '800 50px "Barlow Condensed", sans-serif');
+                        ctx.fillText((d.time || '18:00 CET').toUpperCase(), splitX + 32, lowerY + cardH * 0.64);
+
+                        ctx.fillStyle = t.isLight ? 'rgba(236,232,225,0.65)' : 'rgba(15,20,25,0.65)';
+                        ctx.font = F('dates', '600 16px "JetBrains Mono", monospace');
+                        ctx.fillText((d.label || 'MODE: GAUNTLET').toUpperCase(), splitX + 32, lowerY + cardH * 0.84, 260);
+                    } else {
+                        const rowH = (cardH - 24) / days.length;
+                        days.forEach((d, i) => {
+                            const ry = lowerY + 12 + i * rowH;
+                            if (i > 0) {
+                                ctx.strokeStyle = t.isLight ? 'rgba(236,232,225,0.18)' : 'rgba(15,20,25,0.18)';
+                                ctx.lineWidth = 1.5;
+                                ctx.beginPath();
+                                ctx.moveTo(pad + 44, ry);
+                                ctx.lineTo(W - pad - 28, ry);
+                                ctx.stroke();
+                            }
+
+                            const cy = ry + rowH * 0.66;
+                            ctx.fillStyle = t.surfaceText;
+                            ctx.font = F('dates', `400 ${isStory ? 50 : 40}px "Anton", sans-serif`);
+                            ctx.textAlign = 'left';
+                            ctx.fillText((d.date || '').toUpperCase(), pad + 48, cy, 290);
+
+                            ctx.fillStyle = t.isLight ? 'rgba(236,232,225,0.75)' : 'rgba(15,20,25,0.75)';
+                            ctx.font = F('dates', `700 ${isStory ? 22 : 18}px "JetBrains Mono", monospace`);
+                            ctx.fillText((d.label || '').toUpperCase(), pad + 355, cy - 3, 390);
+
+                            ctx.fillStyle = t.accent;
+                            ctx.font = F('dates', `800 ${isStory ? 38 : 32}px "Barlow Condensed", sans-serif`);
+                            ctx.textAlign = 'right';
+                            ctx.fillText((d.time || '').toUpperCase(), W - pad - 32, cy - 2);
+                        });
+                    }
+                });
+
+                // BLOCCO TWITCH BROADCAST + SPONSOR
+                withDraggable('twitchBar', 'BLOCCO TWITCH & SPONSOR', pad, twY, W - pad * 2, twH, () => {
+                    ctx.strokeStyle = t.ink;
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(pad, twY, W - pad * 2, twH);
+
+                    ctx.fillStyle = '#FF4655';
+                    ctx.fillRect(pad + 24, twY + 20, 92, 28);
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.font = '700 17px "JetBrains Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('● LIVE', pad + 70, twY + 40);
+
+                    ctx.fillStyle = t.inkSoft;
+                    ctx.font = '600 17px "JetBrains Mono", monospace';
+                    ctx.textAlign = 'left';
+                    ctx.fillText('OFFICIAL BROADCAST ON TWITCH', pad + 132, twY + 41);
+
+                    drawTwitchIcon(ctx, pad + 24, twY + 58, 34, t.twitch);
+                    ctx.fillStyle = t.ink;
+                    ctx.font = F('twitch', '900 42px "Barlow Condensed", sans-serif');
+                    ctx.fillText(twitchText, pad + 70, twY + 90);
+
+                    drawSponsorRight(ctx, W - pad - 24, twY + twH / 2, 220, 68, t, 'FORMAT', 'GAUNTLET');
+                });
+
+                // FOOTER CTA
+                const footerY = H - pad - 22;
+                withDraggable('footerCta', 'FOOTER CTA', pad, footerY - 34, W - pad * 2, 42, () => {
+                    ctx.fillStyle = t.ink;
+                    ctx.font = F('cta', '800 30px "Barlow Condensed", sans-serif');
+                    ctx.textAlign = 'left';
+                    ctx.fillText(ctaText, pad + 24, footerY);
+
+                    ctx.fillStyle = t.inkSoft;
+                    ctx.font = '600 17px "JetBrains Mono", monospace';
+                    ctx.textAlign = 'right';
+                    ctx.fillText('OMNIA ESPORTS', W - pad - 24, footerY - 2);
+                });
+            }
+            // LAYOUT B: IMPACT POSTER
+            else {
+                ctx.fillStyle = t.ink;
+                ctx.font = F('kicker', '700 20px "JetBrains Mono", monospace');
+                ctx.textAlign = 'left';
+                ctx.fillText(`OMNIA // ${kickerText}`, pad + 22, pad + 44);
+                ctx.textAlign = 'right';
+                ctx.fillText(prizeText ? `★ ${prizeText}` : 'LIVE ON TWITCH', W - pad - 22, pad + 44);
+
+                withDraggable('omniaLogo', 'LOGO OMNIA', W / 2 - 80, pad + 76, 160, 90, () => {
+                    drawOmniaLogo(ctx, W / 2 - 80, pad + 76, 160, t.ink);
+                });
+
+                const bigY = isStory ? 660 : 475;
+                withDraggable('heroTitle', 'TITOLO IMPACT', pad, bigY - 240, W - pad * 2, isStory ? 480 : 420, () => {
+                    ctx.textAlign = 'center';
+                    ctx.font = F('title', `400 ${isStory ? 275 : 245}px "Anton", sans-serif`);
+                    ctx.fillStyle = t.accent;
+                    ctx.fillText(titleText, W / 2, bigY);
+
+                    ctx.strokeStyle = t.ink;
+                    ctx.lineWidth = 3;
+                    ctx.strokeText(titleText, W / 2, bigY + (isStory ? 225 : 190));
+                });
+
+                if (subjectImg && subjectMode === 'foreground') {
+                    drawSubjectLayer(ctx, W, H, t, false);
+                }
+
+                // Fascia obliqua brutalista con DATA / SCHEDULE
+                const bandY = isStory ? 1240 : 855;
+                const bandH = isMultiDay ? Math.min(240, 72 + days.length * 46) : 150;
+                withDraggable('scheduleCard', 'FASCIA DATE', pad, bandY - bandH / 2, W - pad * 2, bandH, () => {
+                    ctx.save();
+                    ctx.translate(W / 2, bandY);
+                    ctx.rotate(-0.042);
+                    ctx.fillStyle = t.surface;
+                    ctx.fillRect(-W * 0.6, -bandH / 2, W * 1.2, bandH);
+
+                    ctx.fillStyle = t.surfaceText;
+                    ctx.textAlign = 'center';
+                    if (!isMultiDay) {
+                        ctx.font = F('dates', '400 84px "Anton", sans-serif');
+                        ctx.fillText(`${days[0].date.toUpperCase()}  •  ${days[0].time.toUpperCase()}`, 0, 28);
+                    } else {
+                        const startY = -((days.length - 1) * 44) / 2 + 12;
+                        days.forEach((d, idx) => {
+                            ctx.font = F('dates', '800 38px "Barlow Condensed", sans-serif');
+                            ctx.fillText(`${d.date.toUpperCase()}  //  ${d.label.toUpperCase()}  •  ${d.time.toUpperCase()}`, 0, startY + idx * 46);
+                        });
+                    }
+                    ctx.restore();
+                });
+
+                let bottomBoxY = isStory ? 1470 : 1030;
+                if (hasGuests) {
+                    drawGuestsBar(ctx, pad + 24, bottomBoxY - 68, W - pad * 2 - 48, 52, t);
+                }
+
+                withDraggable('twitchBar', 'BLOCCO TWITCH', pad + 24, bottomBoxY - 8, W - pad * 2 - 48, 96, () => {
+                    ctx.fillStyle = t.ink;
+                    ctx.font = F('twitch', '900 48px "Barlow Condensed", sans-serif');
+                    ctx.textAlign = 'center';
+                    ctx.fillText(twitchText, W / 2 + 22, bottomBoxY + 34);
+
+                    const twMetrics = ctx.measureText(twitchText);
+                    drawTwitchIcon(ctx, W / 2 - twMetrics.width / 2 - 26, bottomBoxY + 2, 36, t.twitch);
+
+                    const subLine = sponsorText ? `${extraText}  //  ${sponsorText}` : extraText;
+                    if (subLine) {
+                        ctx.fillStyle = t.inkSoft;
+                        ctx.font = F('subtitle', '600 18px "JetBrains Mono", monospace');
+                        ctx.fillText(subLine, W / 2, bottomBoxY + 74, W - pad * 2 - 48);
+                    }
+                });
+
+                if (sponsorLogoImg) {
+                    withDraggable('sponsorLogo', 'LOGO SPONSOR', W - pad - 184, pad + 88, 160, 54, () => {
+                        drawSponsorRight(ctx, W - pad - 24, pad + 115, 160, 54, t, '', '');
+                    });
+                }
+
+                if (hasExtraInfo) {
+                    drawExtraInfoBox(ctx, pad + 24, H - pad - 148, W - pad * 2 - 48, 56, t);
+                }
+
+                withDraggable('footerCta', 'PULSANTE CTA', pad + 180, H - pad - 76, W - (pad + 180) * 2, 50, () => {
+                    ctx.fillStyle = t.accent;
+                    ctx.fillRect(pad + 180, H - pad - 76, W - (pad + 180) * 2, 50);
+                    ctx.fillStyle = t.accentText;
+                    ctx.font = F('cta', '800 28px "Barlow Condensed", sans-serif');
+                    ctx.textAlign = 'center';
+                    ctx.fillText(ctaText, W / 2, H - pad - 42);
+                });
+            }
+        }
+
+        // =========================================================================
+        // RENDER 2: ROSTER REVEAL (1 o 2 Team, 1-6 Componenti, Creator Highlight)
+        // =========================================================================
+        function renderRosterMode(W, H, t, pad, isStory) {
+            const teamCount = parseInt(document.getElementById('rosterTeamCount').value || '1');
+            const playerCount = parseInt(document.getElementById('rosterPlayerCount').value || '5');
+            const coachText = (document.getElementById('rosterCoach').value || '').trim().toUpperCase();
+            const twitchText = (document.getElementById('inputTwitch').value || 'TWITCH.TV/OMNIA').toUpperCase();
+            const hasGuests = (document.getElementById('inputGuests').value || '').trim().length > 0;
+            const hasExtraInfo = (document.getElementById('inputExtraInfo').value || '').trim().length > 0;
+
+            withDraggable('omniaLogo', 'LOGO OMNIA', pad + 20, pad + 20, 420, 72, () => {
+                drawOmniaLogo(ctx, pad + 24, pad + 24, 124, t.ink);
+                ctx.fillStyle = t.inkSoft;
+                ctx.font = '600 17px "JetBrains Mono", monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText('OMNIA VALORANT GAUNTLET', pad + 168, pad + 64);
+            });
+
+            withDraggable('rosterBadge', 'BADGE ROSTER', W - pad - 266, pad + 24, 242, 42, () => {
+                ctx.fillStyle = t.accent;
+                ctx.fillRect(W - pad - 266, pad + 24, 242, 42);
+                ctx.fillStyle = t.accentText;
+                ctx.font = '700 20px "JetBrains Mono", monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(teamCount === 2 ? 'TEAM LINEUPS' : 'ROSTER REVEAL', W - pad - 145, pad + 52);
+            });
+
+            const headerBottom = pad + 108;
+            ctx.strokeStyle = t.ink;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(pad, headerBottom);
+            ctx.lineTo(W - pad, headerBottom);
+            ctx.stroke();
+
+            if (subjectImg && subjectMode === 'foreground') {
+                drawSubjectLayer(ctx, W, H, t, false);
+            }
+
+            let bottomLimit = H - pad - 74;
+            if (hasExtraInfo) {
+                bottomLimit -= 60;
+                drawExtraInfoBox(ctx, pad, bottomLimit, W - pad * 2, 60, t);
+                bottomLimit -= 14;
+            }
+            if (hasGuests) {
+                bottomLimit -= 56;
+                drawGuestsBar(ctx, pad, bottomLimit, W - pad * 2, 56, t);
+                bottomLimit -= 16;
+            }
+            if (coachText) {
+                bottomLimit -= 52;
+                const coachY = bottomLimit;
+                withDraggable('rosterCoachBox', 'COACH', pad, coachY, W - pad * 2, 50, () => {
+                    ctx.strokeStyle = t.ink;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(pad, coachY, W - pad * 2, 50);
+                    ctx.fillStyle = t.ink;
+                    ctx.font = F('players', '700 21px "JetBrains Mono", monospace');
+                    ctx.textAlign = 'left';
+                    ctx.fillText(coachText, pad + 24, coachY + 33);
+                });
+                bottomLimit -= 16;
+            }
+
+            function drawTeamColumn(dragId, dragLabel, rx, ry, rw, rh, teamName, teamTag, logoImg, playersSlice, compact) {
+                withDraggable(dragId, dragLabel, rx, ry, rw, rh, () => {
+                    const headH = compact ? 105 : 138;
+                    let tx = rx;
+                    if (logoImg) {
+                        const lb = compact ? 76 : 112;
+                        const r = logoImg.width / logoImg.height;
+                        let lw = lb, lh = lb;
+                        if (r > 1) lh = lb / r; else lw = lb * r;
+                        drawImageFx(logoImg, dragId === 'rosterTeam1' ? 'team1' : 'team2', rx + (lb - lw) / 2, ry + 10 + (lb - lh) / 2, lw, lh);
+                        tx = rx + lb + 20;
+                    }
+
+                    ctx.fillStyle = t.accent;
+                    ctx.font = F('players', `700 ${compact ? 16 : 20}px "JetBrains Mono", monospace`);
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`// ${teamTag}`, tx, ry + (compact ? 32 : 42), rw - (tx - rx));
+
+                    ctx.fillStyle = t.ink;
+                    ctx.font = F('players', `400 ${compact ? 58 : (isStory ? 96 : 82)}px "Anton", sans-serif`);
+                    ctx.fillText(teamName, tx, ry + (compact ? 88 : 116), rw - (tx - rx));
+
+                    const listY = ry + headH + 10;
+                    const availH = Math.max(120, rh - headH - 12);
+                    const gap = compact ? 10 : (isStory ? 18 : 14);
+                    const rowH = Math.min(compact ? 92 : (isStory ? 155 : 112), (availH - gap * (playersSlice.length - 1)) / playersSlice.length);
+
+                    playersSlice.forEach((p, idx) => {
+                        const py = listY + idx * (rowH + gap);
+                        const isVip = !!p.isCreator;
+
+                        ctx.fillStyle = isVip ? t.accent : t.surface;
+                        ctx.fillRect(rx, py, rw, rowH);
+
+                        ctx.fillStyle = isVip ? t.surface : t.accent;
+                        ctx.fillRect(rx, py, compact ? 10 : 16, rowH);
+
+                        ctx.fillStyle = isVip ? t.accentText : t.accent;
+                        ctx.font = `700 ${compact ? 18 : 22}px "JetBrains Mono", monospace`;
+                        ctx.textAlign = 'left';
+                        ctx.fillText(isVip ? '★' : `0${idx + 1}`, rx + (compact ? 22 : 36), py + rowH * 0.58);
+
+                        const nickSize = Math.min(rowH * 0.58, compact ? 42 : (isStory ? 66 : 54));
+                        ctx.fillStyle = isVip ? t.accentText : t.surfaceText;
+                        ctx.font = F('players', `400 ${Math.round(nickSize)}px "Anton", sans-serif`);
+                        ctx.fillText((p.name || `PLAYER ${idx + 1}`).toUpperCase(), rx + (compact ? 56 : 96), py + rowH * 0.68, rw * 0.56);
+
+                        ctx.textAlign = 'right';
+                        if (isVip) {
+                            const badgeText = `★ ${(p.role || 'CREATOR').toUpperCase()}`;
+                            ctx.fillStyle = t.surface;
+                            const bw = Math.min(rw * 0.36, badgeText.length * 11 + 26);
+                            const bh = Math.min(34, rowH * 0.52);
+                            ctx.fillRect(rx + rw - bw - 16, py + (rowH - bh) / 2, bw, bh);
+                            ctx.fillStyle = t.surfaceText;
+                            ctx.font = `700 ${compact ? 13 : 16}px "JetBrains Mono", monospace`;
+                            ctx.textAlign = 'center';
+                            ctx.fillText(badgeText, rx + rw - bw / 2 - 16, py + rowH / 2 + 6, bw - 8);
+                        } else {
+                            ctx.fillStyle = t.isLight ? 'rgba(236,232,225,0.72)' : 'rgba(15,20,25,0.72)';
+                            ctx.font = `700 ${compact ? 15 : 18}px "JetBrains Mono", monospace`;
+                            ctx.fillText((p.role || 'FLEX').toUpperCase(), rx + rw - 22, py + rowH * 0.58);
+                        }
+                    });
+                });
+            }
+
+            const contentTop = headerBottom + 18;
+            const contentH = bottomLimit - contentTop;
+            const t1Name = (document.getElementById('rosterTeamName').value || 'OMNIA ESPORTS').toUpperCase();
+            const t1Tag = (document.getElementById('rosterTag').value || 'OFFICIAL LINEUP').toUpperCase();
+
+            if (teamCount === 1) {
+                const cardW = (subjectImg && subjectMode === 'foreground') ? (W - pad * 2) * 0.68 : (W - pad * 2);
+                drawTeamColumn('rosterTeam1', 'ROSTER TEAM 01', pad, contentTop, cardW, contentH, t1Name, t1Tag, teamLogoImg, rosterPlayers.slice(0, playerCount), false);
+            } else {
+                const t2Name = (document.getElementById('rosterTeam2Name').value || 'TEAM CHALLENGERS').toUpperCase();
+                const t2Tag = (document.getElementById('rosterTeam2Tag').value || 'CREATOR SQUAD').toUpperCase();
+                if (isStory) {
+                    const halfH = (contentH - 24) / 2;
+                    drawTeamColumn('rosterTeam1', 'ROSTER TEAM 01', pad, contentTop, W - pad * 2, halfH, t1Name, t1Tag, teamLogoImg, rosterPlayers.slice(0, playerCount), true);
+                    drawTeamColumn('rosterTeam2', 'ROSTER TEAM 02', pad, contentTop + halfH + 24, W - pad * 2, halfH, t2Name, t2Tag, teamLogo2Img, rosterPlayers2.slice(0, playerCount), true);
+                } else {
+                    const colW = (W - pad * 2 - 28) / 2;
+                    drawTeamColumn('rosterTeam1', 'ROSTER TEAM 01', pad, contentTop, colW, contentH, t1Name, t1Tag, teamLogoImg, rosterPlayers.slice(0, playerCount), true);
+                    drawTeamColumn('rosterTeam2', 'ROSTER TEAM 02', pad + colW + 28, contentTop, colW, contentH, t2Name, t2Tag, teamLogo2Img, rosterPlayers2.slice(0, playerCount), true);
+                }
+            }
+
+            const footerY = H - pad - 20;
+            withDraggable('footerCta', 'FOOTER TWITCH & SPONSOR', pad, footerY - 36, W - pad * 2, 46, () => {
+                drawTwitchIcon(ctx, pad + 20, footerY - 30, 32, t.twitch);
+                ctx.fillStyle = t.ink;
+                ctx.font = F('twitch', '800 32px "Barlow Condensed", sans-serif');
+                ctx.textAlign = 'left';
+                ctx.fillText(twitchText, pad + 64, footerY - 2);
+
+                drawSponsorRight(ctx, W - pad - 20, footerY - 14, 190, 44, t, '', 'OMNIA ESPORTS');
+            });
+        }
+
+        // =========================================================================
+        // RENDER 3: GAME DELLA SERATA (MATCHDAY SCHEDULE VCT)
+        // =========================================================================
+        function renderMatchdayMode(W, H, t, pad, isStory) {
+            const mTitle = (document.getElementById('matchdayTitle').value || 'GAME DELLA SERATA').toUpperCase();
+            const mDate = (document.getElementById('matchdayDate').value || '19 DICEMBRE // LIVE').toUpperCase();
+            const twitchText = (document.getElementById('inputTwitch').value || 'TWITCH.TV/OMNIA').toUpperCase();
+            const prizeText = (document.getElementById('inputPrize').value || '').trim().toUpperCase();
+            const hasGuests = (document.getElementById('inputGuests').value || '').trim().length > 0;
+            const hasExtraInfo = (document.getElementById('inputExtraInfo').value || '').trim().length > 0;
+
+            withDraggable('omniaLogo', 'LOGO OMNIA', pad + 24, pad + 24, 130, 72, () => {
+                drawOmniaLogo(ctx, pad + 24, pad + 24, 124, t.ink);
+            });
+
+            withDraggable('matchdayBadge', 'DATA SERATA', W - pad - 286, pad + 24, 262, 42, () => {
+                ctx.fillStyle = t.accent;
+                ctx.fillRect(W - pad - 286, pad + 24, 262, 42);
+                ctx.fillStyle = t.accentText;
+                ctx.font = F('kicker', '700 19px "JetBrains Mono", monospace');
+                ctx.textAlign = 'center';
+                ctx.fillText(mDate, W - pad - 155, pad + 51, 246);
+            });
+
+            const headerBottom = pad + 108;
+            ctx.strokeStyle = t.ink;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(pad, headerBottom);
+            ctx.lineTo(W - pad, headerBottom);
+            ctx.stroke();
+
+            withDraggable('heroTitle', 'TITOLO SERATA', pad, headerBottom + 16, W - pad * 2, isStory ? 110 : 88, () => {
+                ctx.fillStyle = t.ink;
+                ctx.font = F('title', `400 ${isStory ? 96 : 80}px "Anton", sans-serif`);
+                ctx.textAlign = 'left';
+                ctx.fillText(mTitle, pad + 20, headerBottom + (isStory ? 106 : 86), W - pad * 2 - 220);
+
+                if (prizeText) {
+                    ctx.fillStyle = t.accent;
+                    ctx.font = F('kicker', '700 20px "JetBrains Mono", monospace');
+                    ctx.textAlign = 'right';
+                    ctx.fillText(`★ ${prizeText}`, W - pad - 20, headerBottom + (isStory ? 90 : 74));
+                }
+            });
+
+            if (subjectImg && subjectMode === 'foreground') {
+                drawSubjectLayer(ctx, W, H, t, false);
+            }
+
+            let areaBottom = H - pad - 76;
+            if (hasExtraInfo) {
+                areaBottom -= 60;
+                drawExtraInfoBox(ctx, pad, areaBottom, W - pad * 2, 60, t);
+                areaBottom -= 16;
+            }
+            if (hasGuests) {
+                areaBottom -= 56;
+                drawGuestsBar(ctx, pad, areaBottom, W - pad * 2, 56, t);
+                areaBottom -= 18;
+            }
+
+            const areaTop = headerBottom + (isStory ? 142 : 114);
+            const areaH = areaBottom - areaTop;
+            const games = eveningGames.length > 0 ? eveningGames : [{ time: '18:00', meta: 'GAME 01', teamA: 'TEAM A', scoreA: '', teamB: 'TEAM B', scoreB: '', featured: false }];
+            const gap = isStory ? 26 : 18;
+            const cardH = Math.min(isStory ? 230 : 175, (areaH - gap * (games.length - 1)) / games.length);
+            const totalListH = games.length * cardH + (games.length - 1) * gap;
+            const startY = areaTop + (areaH - totalListH) / 2;
+
+            games.forEach((g, idx) => {
+                const gy = startY + idx * (cardH + gap);
+                const cardW = W - pad * 2;
+                const isMain = !!g.featured;
+
+                withDraggable(`gameCard_${idx}`, `GAME 0${idx + 1}`, pad, gy, cardW, cardH, () => {
+                    ctx.fillStyle = t.surface;
+                    ctx.fillRect(pad, gy, cardW, cardH);
+
+                    const timeW = 165;
+                    ctx.fillStyle = isMain ? t.accent : (t.isLight ? 'rgba(236,232,225,0.12)' : 'rgba(15,20,25,0.12)');
+                    ctx.fillRect(pad, gy, timeW, cardH);
+
+                    if (isMain) {
+                        ctx.strokeStyle = t.accent;
+                        ctx.lineWidth = 4;
+                        ctx.strokeRect(pad, gy, cardW, cardH);
+                    }
+
+                    ctx.fillStyle = isMain ? t.accentText : t.surfaceText;
+                    ctx.font = F('dates', `400 ${Math.min(54, cardH * 0.36)}px "Anton", sans-serif`);
+                    ctx.textAlign = 'center';
+                    ctx.fillText((g.time || '18:00').toUpperCase(), pad + timeW / 2, gy + cardH * 0.56);
+
+                    ctx.fillStyle = isMain ? t.accentText : t.accent;
+                    ctx.font = '700 14px "JetBrains Mono", monospace';
+                    ctx.fillText(isMain ? '★ MAIN EVENT' : `GAME 0${idx + 1}`, pad + timeW / 2, gy + cardH * 0.78);
+
+                    const contentX = pad + timeW + 32;
+                    const contentW = cardW - timeW - 56;
+
+                    ctx.fillStyle = t.accent;
+                    ctx.font = F('subtitle', '700 17px "JetBrains Mono", monospace');
+                    ctx.textAlign = 'left';
+                    ctx.fillText((g.meta || `GAME 0${idx + 1}`).toUpperCase(), contentX, gy + cardH * 0.28);
+
+                    const midX = contentX + contentW / 2;
+                    const rowY = gy + cardH * 0.72;
+                    const teamFont = Math.min(56, Math.round(cardH * 0.34));
+
+                    const sA = (g.scoreA || '').trim();
+                    const sB = (g.scoreB || '').trim();
+                    const hasScore = sA !== '' || sB !== '';
+
+                    ctx.fillStyle = t.accent;
+                    const pillW = hasScore ? 116 : 64;
+                    const pillH = Math.min(48, cardH * 0.32);
+                    ctx.fillRect(midX - pillW / 2, rowY - pillH * 0.76, pillW, pillH);
+
+                    ctx.fillStyle = t.accentText;
+                    ctx.font = F('players', `400 ${Math.min(34, Math.round(pillH * 0.72))}px "Anton", sans-serif`);
+                    ctx.textAlign = 'center';
+                    ctx.fillText(hasScore ? `${sA || '0'} - ${sB || '0'}` : 'VS', midX, rowY - pillH * 0.14);
+
+                    ctx.fillStyle = t.surfaceText;
+                    ctx.font = F('players', `400 ${teamFont}px "Anton", sans-serif`);
+                    ctx.textAlign = 'right';
+                    ctx.fillText((g.teamA || 'TEAM A').toUpperCase(), midX - pillW / 2 - 22, rowY, contentW / 2 - pillW / 2 - 26);
+
+                    ctx.textAlign = 'left';
+                    ctx.fillText((g.teamB || 'TEAM B').toUpperCase(), midX + pillW / 2 + 22, rowY, contentW / 2 - pillW / 2 - 26);
+                });
+            });
+
+            const footerY = H - pad - 20;
+            withDraggable('footerCta', 'FOOTER TWITCH & SPONSOR', pad, footerY - 36, W - pad * 2, 46, () => {
+                drawTwitchIcon(ctx, pad + 20, footerY - 30, 32, t.twitch);
+                ctx.fillStyle = t.ink;
+                ctx.font = F('twitch', '800 32px "Barlow Condensed", sans-serif');
+                ctx.textAlign = 'left';
+                ctx.fillText(twitchText, pad + 64, footerY - 2);
+
+                drawSponsorRight(ctx, W - pad - 20, footerY - 14, 190, 44, t, '', 'OMNIA VALORANT GAUNTLET');
+            });
+        }
+
+        // =========================================================================
+        // EVENTI POINTER (MOUSE & TOUCH) PER DRAG & DROP + ZOOM SUL CANVAS
+        // =========================================================================
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) * (canvas.width / rect.width),
+                y: (e.clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function hitTest(pt) {
+            for (let i = hitBoxes.length - 1; i >= 0; i--) {
+                const b = hitBoxes[i];
+                if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) {
+                    return b;
+                }
+            }
+            return null;
+        }
+
+        // ---- Selezione, resize handles e guide magnetiche ----
+        let selectedId = null;
+        let activeHandle = null;
+        let resizeStart = null;
+        let dragStartBox = null;
+        let snapGuides = { x: [], y: [] };
+        const HANDLE_HIT = 30;
+        const SNAP_TH = 14;
+        const GRID_PAD = 54;
+
+        function findBox(id) {
+            for (let i = hitBoxes.length - 1; i >= 0; i--) {
+                if (hitBoxes[i].id === id) return hitBoxes[i];
+            }
+            return null;
+        }
+
+        function canResize(b) {
+            return !!b && !(b.id === 'subject' && subjectMode === 'backdrop');
+        }
+
+        function getHandles(b) {
+            return [
+                { k: 'tl', x: b.x, y: b.y },
+                { k: 'tr', x: b.x + b.w, y: b.y },
+                { k: 'bl', x: b.x, y: b.y + b.h },
+                { k: 'br', x: b.x + b.w, y: b.y + b.h }
+            ];
+        }
+
+        function handleHit(pt) {
+            if (!selectedId) return null;
+            const b = findBox(selectedId);
+            if (!canResize(b)) return null;
+            return getHandles(b).find(h => Math.abs(pt.x - h.x) <= HANDLE_HIT && Math.abs(pt.y - h.y) <= HANDLE_HIT) || null;
+        }
+
+        function computeSnap(box, dx, dy) {
+            const W = canvas.width, H = canvas.height, pad = GRID_PAD;
+            const xs = [pad, pad + (W - pad * 2) * 0.33, W / 2, pad + (W - pad * 2) * 0.68, W - pad];
+            const ys = [pad, H / 2, H - pad];
+            let bx = null, by = null;
+            [box.x + dx, box.x + dx + box.w / 2, box.x + dx + box.w].forEach(v => {
+                xs.forEach(t => {
+                    const d = t - v;
+                    if (Math.abs(d) <= SNAP_TH && (!bx || Math.abs(d) < Math.abs(bx.d))) bx = { d, t };
+                });
+            });
+            [box.y + dy, box.y + dy + box.h / 2, box.y + dy + box.h].forEach(v => {
+                ys.forEach(t => {
+                    const d = t - v;
+                    if (Math.abs(d) <= SNAP_TH && (!by || Math.abs(d) < Math.abs(by.d))) by = { d, t };
+                });
+            });
+            snapGuides = { x: bx ? [bx.t] : [], y: by ? [by.t] : [] };
+            return { dx: dx + (bx ? bx.d : 0), dy: dy + (by ? by.d : 0) };
+        }
+
+        function drawEditorOverlay(W, H) {
+            ctx.save();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = '#00F0FF';
+            ctx.lineWidth = 2;
+            snapGuides.x.forEach(gx => { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); });
+            snapGuides.y.forEach(gy => { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); });
+
+            const sel = selectedId ? findBox(selectedId) : null;
+            if (sel) {
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(sel.x, sel.y, sel.w, sel.h);
+                if (canResize(sel)) {
+                    getHandles(sel).forEach(h => {
+                        ctx.fillStyle = '#00F0FF';
+                        ctx.fillRect(h.x - 12, h.y - 12, 24, 24);
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = '#090C10';
+                        ctx.strokeRect(h.x - 12, h.y - 12, 24, 24);
+                    });
+                }
+            }
+            ctx.restore();
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            const pt = getCanvasCoords(e);
+
+            // 1. Maniglia di resize dell'elemento selezionato
+            const h = handleHit(pt);
+            if (h) {
+                const b = findBox(selectedId);
+                const isSub = selectedId === 'subject';
+                const off = isSub ? null : getOffset(selectedId);
+                resizeStart = {
+                    anchor: {
+                        x: h.k.includes('l') ? b.x + b.w : b.x,
+                        y: h.k.includes('t') ? b.y + b.h : b.y
+                    },
+                    box: { x: b.x, y: b.y, w: b.w, h: b.h },
+                    baseX: isSub ? 0 : b.x - off.x,
+                    baseY: isSub ? 0 : b.y - off.y,
+                    s0: isSub ? parseInt(document.getElementById('imgScale').value) : off.s
+                };
+                resizeStart.dist = Math.hypot(pt.x - resizeStart.anchor.x, pt.y - resizeStart.anchor.y) || 1;
+                activeHandle = h.k;
+                draggingId = selectedId;
+                canvas.setPointerCapture(e.pointerId);
+                renderGraphic();
+                return;
+            }
+
+            // 2. Selezione / trascinamento
+            const hit = hitTest(pt);
+            if (!hit) {
+                selectedId = null;
+                renderGraphic();
+                return;
+            }
+
+            selectedId = hit.id;
+            draggingId = hit.id;
+            dragStartCanvas = pt;
+            dragStartBox = { x: hit.x, y: hit.y, w: hit.w, h: hit.h };
+            if (draggingId === 'subject') {
+                dragStartOffset = {
+                    x: parseInt(document.getElementById('imgX').value),
+                    y: parseInt(document.getElementById('imgY').value)
+                };
+            } else {
+                const off = getOffset(draggingId);
+                dragStartOffset = { x: off.x, y: off.y };
+            }
+            canvas.setPointerCapture(e.pointerId);
+            canvas.style.cursor = 'grabbing';
+            renderGraphic();
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            const pt = getCanvasCoords(e);
+
+            if (draggingId && activeHandle && resizeStart) {
+                const r = resizeStart;
+                const ratio = Math.hypot(pt.x - r.anchor.x, pt.y - r.anchor.y) / r.dist;
+                if (draggingId === 'subject') {
+                    document.getElementById('imgScale').value = Math.max(25, Math.min(250, Math.round(r.s0 * ratio)));
+                } else {
+                    const ns = Math.max(0.3, Math.min(4, r.s0 * ratio));
+                    const k = ns / r.s0;
+                    const nw = r.box.w * k;
+                    const nh = r.box.h * k;
+                    const tlx = r.anchor.x - (activeHandle.includes('l') ? nw : 0);
+                    const tly = r.anchor.y - (activeHandle.includes('t') ? nh : 0);
+                    elementOffsets[draggingId] = { x: tlx - r.baseX, y: tly - r.baseY, s: ns };
+                }
+                renderGraphic();
+                return;
+            }
+
+            if (draggingId) {
+                let dx = Math.round(pt.x - dragStartCanvas.x);
+                let dy = Math.round(pt.y - dragStartCanvas.y);
+                if (draggingId === 'subject') {
+                    document.getElementById('imgX').value = Math.max(-700, Math.min(700, dragStartOffset.x + dx));
+                    document.getElementById('imgY').value = Math.max(-700, Math.min(800, dragStartOffset.y + dy));
+                } else {
+                    if (!e.altKey && dragStartBox) {
+                        const snapped = computeSnap(dragStartBox, dx, dy);
+                        dx = Math.round(snapped.dx);
+                        dy = Math.round(snapped.dy);
+                    } else {
+                        snapGuides = { x: [], y: [] };
+                    }
+                    const prev = getOffset(draggingId);
+                    elementOffsets[draggingId] = {
+                        x: dragStartOffset.x + dx,
+                        y: dragStartOffset.y + dy,
+                        s: prev.s
+                    };
+                }
+                renderGraphic();
+                return;
+            }
+
+            const hh = handleHit(pt);
+            const hit = hitTest(pt);
+            const newHover = hit ? hit.id : null;
+            if (hh) {
+                canvas.style.cursor = (hh.k === 'tl' || hh.k === 'br') ? 'nwse-resize' : 'nesw-resize';
+            } else {
+                canvas.style.cursor = hit ? 'grab' : 'default';
+            }
+            if (newHover !== hoveredId) {
+                hoveredId = newHover;
+                renderGraphic();
+            }
+        });
+
+        function stopDragging(e) {
+            if (!draggingId) return;
+            draggingId = null;
+            activeHandle = null;
+            resizeStart = null;
+            dragStartBox = null;
+            snapGuides = { x: [], y: [] };
+            canvas.style.cursor = hoveredId ? 'grab' : 'default';
+            renderGraphic();
+        }
+        canvas.addEventListener('pointerup', stopDragging);
+        canvas.addEventListener('pointercancel', stopDragging);
+        canvas.addEventListener('pointerleave', () => {
+            if (!draggingId && hoveredId) {
+                hoveredId = null;
+                renderGraphic();
+            }
+        });
+
+        // Doppio clic su un elemento per riportarlo a posizione e scala originali
+        canvas.addEventListener('dblclick', (e) => {
+            const pt = getCanvasCoords(e);
+            const hit = hitTest(pt);
+            if (!hit) return;
+            if (hit.id === 'subject') {
+                document.getElementById('imgX').value = 80;
+                document.getElementById('imgY').value = 60;
+                document.getElementById('imgScale').value = 105;
+            } else {
+                elementOffsets[hit.id] = { x: 0, y: 0, s: 1 };
+            }
+            renderGraphic();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && selectedId) {
+                selectedId = null;
+                renderGraphic();
+            }
+        });
+
+        // Rotella del mouse sull'agente/mappa per lo zoom rapido
+        canvas.addEventListener('wheel', (e) => {
+            if (!subjectImg) return;
+            const pt = getCanvasCoords(e);
+            const hit = hitTest(pt);
+            if (hit && hit.id === 'subject') {
+                e.preventDefault();
+                const scaleInput = document.getElementById('imgScale');
+                const delta = e.deltaY < 0 ? 5 : -5;
+                scaleInput.value = Math.max(25, Math.min(250, parseInt(scaleInput.value) + delta));
+                renderGraphic();
+            }
+        }, { passive: false });
+
+        // =========================================================================
+        // GESTIONE UI DINAMICA (Tab, Multi-Day, Roster Dinamico, Matchday)
+        // =========================================================================
+        function setMode(mode) {
+            currentMode = mode;
+            ['announce', 'roster', 'matchday'].forEach(m => {
+                const tab = document.getElementById(`tab-${m}`);
+                const panel = document.getElementById(`panel-${m}`);
+                if (m === mode) {
+                    tab.className = 'py-2 text-xs font-black uppercase tracking-wider bg-[#ff4655] text-white transition';
+                    panel.classList.remove('hidden');
+                } else {
+                    tab.className = 'py-2 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white transition';
+                    panel.classList.add('hidden');
+                }
+            });
+            document.getElementById('layoutSelectorWrap').style.opacity = mode === 'announce' ? '1' : '0.35';
+            document.getElementById('layoutSelectorWrap').style.pointerEvents = mode === 'announce' ? 'auto' : 'none';
+            renderGraphic();
+        }
+
+        function renderDaysInputs() {
+            const container = document.getElementById('daysContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            tournamentDays.forEach((d, idx) => {
+                const box = document.createElement('div');
+                box.className = 'bg-[#0e1319] border border-slate-800 p-2 space-y-1.5';
+                box.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono-tech text-[10px] text-[#ff4655] font-bold uppercase">Giornata 0${idx + 1}</span>
+                        ${tournamentDays.length > 1 ? `<button type="button" onclick="removeTournamentDay(${idx})" class="font-mono-tech text-[10px] text-slate-400 hover:text-[#ff4655]">✕ Rimuovi</button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <input type="text" value="${d.date}" oninput="updateDay(${idx}, 'date', this.value)" placeholder="es. 19 DICEMBRE" class="bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1 text-xs font-bold text-white">
+                        <input type="text" value="${d.time}" oninput="updateDay(${idx}, 'time', this.value)" placeholder="es. 18:00 CET" class="bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1 text-xs font-bold text-white">
+                    </div>
+                    <input type="text" value="${d.label}" oninput="updateDay(${idx}, 'label', this.value)" placeholder="es. DAY 1 — QUALIFIERS" class="w-full bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1 text-[11px] font-mono-tech text-slate-300">
+                `;
+                container.appendChild(box);
+            });
+        }
+
+        function addTournamentDay() {
+            if (tournamentDays.length >= 4) return;
+            const n = tournamentDays.length + 1;
+            tournamentDays.push({
+                date: `${18 + n} DICEMBRE`,
+                time: '18:00 CET',
+                label: n === 2 ? 'DAY 2 — SEMIFINALS' : `DAY ${n} — GRAND FINALS`
+            });
+            renderDaysInputs();
+            renderGraphic();
+        }
+
+        function removeTournamentDay(idx) {
+            if (tournamentDays.length <= 1) return;
+            tournamentDays.splice(idx, 1);
+            renderDaysInputs();
+            renderGraphic();
+        }
+
+        function updateDay(idx, field, val) {
+            tournamentDays[idx][field] = val;
+            renderGraphic();
+        }
+
+        function updateRosterStructure() {
+            const teamCount = parseInt(document.getElementById('rosterTeamCount').value || '1');
+            const team2Box = document.getElementById('rosterTeam2Box');
+            if (teamCount === 2) team2Box.classList.remove('hidden');
+            else team2Box.classList.add('hidden');
+            renderRosterInputs();
+            renderGraphic();
+        }
+
+        function renderRosterInputs() {
+            const count = parseInt(document.getElementById('rosterPlayerCount').value || '5');
+            const roles = ['DUELIST', 'INITIATOR', 'CONTROLLER', 'SENTINEL', 'FLEX / IGL', 'CREATOR', 'GUEST', 'SUB'];
+
+            function fillContainer(containerId, arr, teamIdx) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+                for (let idx = 0; idx < count; idx++) {
+                    const p = arr[idx];
+                    const row = document.createElement('div');
+                    row.className = 'grid grid-cols-12 gap-1 items-center';
+                    row.innerHTML = `
+                        <button type="button" onclick="togglePlayerCreator(${teamIdx}, ${idx})" title="Metti in evidenza come Creator / Ospite" class="col-span-1 py-1 text-center text-xs font-bold border ${p.isCreator ? 'bg-[#ff4655] border-[#ff4655] text-white' : 'bg-[#0e1319] border-slate-700 text-slate-500 hover:text-white'}">★</button>
+                        <input type="text" value="${p.name}" oninput="updatePlayer(${teamIdx}, ${idx}, 'name', this.value)" class="col-span-6 bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-2 py-1 text-xs font-bold text-white">
+                        <select onchange="updatePlayer(${teamIdx}, ${idx}, 'role', this.value)" class="col-span-5 bg-[#151c24] border border-slate-700/80 focus:border-[#ff4655] focus:outline-none px-1 py-1 text-[11px] font-bold text-slate-200">
+                            ${roles.map(r => `<option value="${r}" ${p.role === r ? 'selected' : ''}>${r}</option>`).join('')}
+                        </select>
+                    `;
+                    container.appendChild(row);
+                }
+            }
+
+            fillContainer('rosterPlayersContainer', rosterPlayers, 0);
+            fillContainer('rosterPlayers2Container', rosterPlayers2, 1);
+        }
+
+        function updatePlayer(teamIdx, idx, field, val) {
+            const arr = teamIdx === 0 ? rosterPlayers : rosterPlayers2;
+            arr[idx][field] = val;
+            renderGraphic();
+        }
+
+        function togglePlayerCreator(teamIdx, idx) {
+            const arr = teamIdx === 0 ? rosterPlayers : rosterPlayers2;
+            arr[idx].isCreator = !arr[idx].isCreator;
+            renderRosterInputs();
+            renderGraphic();
+        }
+
+        function renderEveningGamesInputs() {
+            const container = document.getElementById('eveningGamesContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            eveningGames.forEach((g, i) => {
+                const box = document.createElement('div');
+                box.className = 'bg-[#141b23] border border-slate-800 p-2.5 space-y-1.5';
+                box.innerHTML = `
+                    <div class="flex items-center justify-between gap-1.5">
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="toggleGameFeatured(${i})" title="Segna come Main Event" class="px-1.5 py-0.5 text-[10px] font-bold border ${g.featured ? 'bg-[#ff4655] border-[#ff4655] text-white' : 'bg-[#0e1319] border-slate-700 text-slate-400 hover:text-white'}">★ MAIN</button>
+                            <span class="font-mono-tech text-[10px] text-slate-400">GAME 0${i + 1}</span>
+                        </div>
+                        ${eveningGames.length > 1 ? `<button type="button" onclick="removeEveningGame(${i})" class="font-mono-tech text-[10px] text-slate-400 hover:text-[#ff4655]">✕ Rimuovi</button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-12 gap-1.5">
+                        <input type="text" value="${g.time}" oninput="updateEveningGame(${i}, 'time', this.value)" placeholder="18:00" class="col-span-4 bg-[#0e1319] border border-slate-700/80 px-2 py-1 text-[11px] font-mono-tech text-[#ff4655] font-bold">
+                        <input type="text" value="${g.meta}" oninput="updateEveningGame(${i}, 'meta', this.value)" placeholder="BO1 • ASCENT" class="col-span-8 bg-[#0e1319] border border-slate-700/80 px-2 py-1 text-[11px] font-mono-tech text-slate-300">
+                    </div>
+                    <div class="grid grid-cols-12 gap-1.5">
+                        <input type="text" value="${g.teamA}" oninput="updateEveningGame(${i}, 'teamA', this.value)" placeholder="Team A" class="col-span-9 bg-[#151c24] border border-slate-700/80 px-2 py-1 text-xs font-bold text-white">
+                        <input type="text" value="${g.scoreA}" oninput="updateEveningGame(${i}, 'scoreA', this.value)" placeholder="-" class="col-span-3 bg-[#151c24] border border-slate-700/80 px-2 py-1 text-xs font-bold text-center text-white">
+                    </div>
+                    <div class="grid grid-cols-12 gap-1.5">
+                        <input type="text" value="${g.teamB}" oninput="updateEveningGame(${i}, 'teamB', this.value)" placeholder="Team B" class="col-span-9 bg-[#151c24] border border-slate-700/80 px-2 py-1 text-xs font-bold text-white">
+                        <input type="text" value="${g.scoreB}" oninput="updateEveningGame(${i}, 'scoreB', this.value)" placeholder="-" class="col-span-3 bg-[#151c24] border border-slate-700/80 px-2 py-1 text-xs font-bold text-center text-white">
+                    </div>
+                `;
+                container.appendChild(box);
+            });
+        }
+
+        function addEveningGame() {
+            if (eveningGames.length >= 6) return;
+            const n = eveningGames.length + 1;
+            eveningGames.push({
+                time: `${17 + n}:30`,
+                meta: `GAME 0${n} // BO1`,
+                teamA: 'TEAM A',
+                scoreA: '',
+                teamB: 'TEAM B',
+                scoreB: '',
+                featured: false
+            });
+            renderEveningGamesInputs();
+            renderGraphic();
+        }
+
+        function removeEveningGame(idx) {
+            if (eveningGames.length <= 1) return;
+            eveningGames.splice(idx, 1);
+            renderEveningGamesInputs();
+            renderGraphic();
+        }
+
+        function updateEveningGame(idx, field, val) {
+            eveningGames[idx][field] = val;
+            renderGraphic();
+        }
+
+        function toggleGameFeatured(idx) {
+            eveningGames[idx].featured = !eveningGames[idx].featured;
+            renderEveningGamesInputs();
+            renderGraphic();
+        }
+
+        function removeTeamLogo(teamIdx) {
+            if (teamIdx === 0) {
+                teamLogoImg = null;
+                document.getElementById('teamLogoUpload').value = '';
+                document.getElementById('btnRemoveTeamLogo').classList.add('hidden');
+            } else {
+                teamLogo2Img = null;
+                document.getElementById('teamLogo2Upload').value = '';
+                document.getElementById('btnRemoveTeamLogo2').classList.add('hidden');
+            }
+            renderGraphic();
+        }
+
+        function removeSponsorLogo() {
+            sponsorLogoImg = null;
+            document.getElementById('sponsorLogoUpload').value = '';
+            document.getElementById('btnRemoveSponsorLogo').classList.add('hidden');
+            renderGraphic();
+        }
+
+        function setFormat(fmt) {
+            currentFormat = fmt;
+            document.getElementById('btnPost').className = fmt === 'post'
+                ? 'py-1.5 text-xs font-bold uppercase tracking-wider bg-[#ff4655] text-white transition'
+                : 'py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition';
+            document.getElementById('btnStory').className = fmt === 'story'
+                ? 'py-1.5 text-xs font-bold uppercase tracking-wider bg-[#ff4655] text-white transition'
+                : 'py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition';
+            document.getElementById('resLabel').innerText = fmt === 'post'
+                ? 'OUTPUT: 1080 × 1350 PX // POST IG'
+                : 'OUTPUT: 1080 × 1920 PX // STORIA IG';
+            renderGraphic();
+        }
+
+        function setLayout(layout) {
+            currentLayout = layout;
+            document.getElementById('btnLayoutEditorial').className = layout === 'editorial'
+                ? 'py-1.5 text-xs font-bold uppercase tracking-wider bg-[#ece8e1] text-[#0e1319] transition'
+                : 'py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition';
+            document.getElementById('btnLayoutPoster').className = layout === 'poster'
+                ? 'py-1.5 text-xs font-bold uppercase tracking-wider bg-[#ece8e1] text-[#0e1319] transition'
+                : 'py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white transition';
+            renderGraphic();
+        }
+
+        function setTheme(themeName) {
+            currentTheme = themeName;
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('border-2', 'border-[#ff4655]');
+                btn.classList.add('border', 'border-slate-700');
+            });
+            const active = document.getElementById(`theme-${themeName}`);
+            active.classList.remove('border', 'border-slate-700');
+            active.classList.add('border-2', 'border-[#ff4655]');
+            renderGraphic();
+        }
+
+        function setImgMode(mode) {
+            subjectMode = mode;
+            document.getElementById('modeForeground').className = mode === 'foreground'
+                ? 'py-1 text-[11px] font-bold uppercase bg-[#ff4655] text-white'
+                : 'py-1 text-[11px] font-bold uppercase text-slate-400 hover:text-white';
+            document.getElementById('modeBackdrop').className = mode === 'backdrop'
+                ? 'py-1 text-[11px] font-bold uppercase bg-[#ff4655] text-white'
+                : 'py-1 text-[11px] font-bold uppercase text-slate-400 hover:text-white';
+            renderGraphic();
+        }
+
+        function removeSubjectImage() {
+            subjectImg = null;
+            document.getElementById('subjectUpload').value = '';
+            document.getElementById('imgControls').classList.add('hidden');
+            document.getElementById('btnRemoveImg').classList.add('hidden');
+            renderGraphic();
+        }
+
+        // ---- Export: singolo, doppio (Post + Storia), cartella di output (solo app desktop) ----
+        const OUTDIR_KEY = 'omnia.outDir';
+
+        function getOutDir() {
+            try { return localStorage.getItem(OUTDIR_KEY) || ''; } catch (e) { return ''; }
+        }
+
+        function refreshOutDirLabel() {
+            const row = document.getElementById('outDirRow');
+            if (!window.omnia) return;
+            row.classList.remove('hidden');
+            const dir = getOutDir();
+            document.getElementById('outDirLabel').textContent = dir ? `Cartella: ${dir}` : 'Cartella: non scelta (verrà chiesta)';
+            document.getElementById('outDirLabel').title = dir;
+        }
+
+        async function chooseOutDir() {
+            if (!window.omnia) return null;
+            const dir = await window.omnia.pickFolder();
+            if (dir) {
+                try { localStorage.setItem(OUTDIR_KEY, dir); } catch (e) {}
+                refreshOutDirLabel();
+            }
+            return dir;
+        }
+
+        function exportFileName(fmt) {
+            return `OMNIA_GAUNTLET_${currentMode.toUpperCase()}_${fmt === 'post' ? 'POST_4x5' : 'STORIA_9x16'}.png`;
+        }
+
+        // Renderizza pulito (senza overlay editor) nel formato richiesto e ripristina l'anteprima
+        function renderToDataURL(fmt) {
+            const prev = currentFormat;
+            currentFormat = fmt;
+            renderGraphic(true);
+            const url = canvas.toDataURL('image/png', 1.0);
+            currentFormat = prev;
+            return url;
+        }
+
+        async function deliverFiles(files) {
+            if (window.omnia) {
+                let dir = getOutDir();
+                if (!dir) dir = await chooseOutDir();
+                if (!dir) { setStatus('Export annullato'); return; }
+                try {
+                    const saved = await window.omnia.saveFiles(dir, files);
+                    setStatus(`Esportati ${saved.length} file ✓`);
+                    window.omnia.revealFile(saved[0]);
+                } catch (err) {
+                    alert('Esportazione non riuscita: ' + err.message);
+                }
+                return;
+            }
+            for (const f of files) {
+                const link = document.createElement('a');
+                link.download = f.name;
+                link.href = f.dataUrl;
+                link.click();
+                await new Promise(r => setTimeout(r, 300));
+            }
+            setStatus(`Esportati ${files.length} file ✓`);
+        }
+
+        async function downloadPNG() {
+            const files = [{ name: exportFileName(currentFormat), dataUrl: renderToDataURL(currentFormat) }];
+            renderGraphic(false);
+            await deliverFiles(files);
+        }
+
+        async function exportBoth() {
+            const files = ['post', 'story'].map(fmt => ({ name: exportFileName(fmt), dataUrl: renderToDataURL(fmt) }));
+            renderGraphic(false);
+            await deliverFiles(files);
+        }
+
+        // Event Listeners
+        [
+            'inputTitle', 'inputKicker', 'inputPrize', 'inputSponsor',
+            'inputGuestLabel', 'inputGuests', 'inputExtraInfo',
+            'inputTwitch', 'inputExtra', 'inputCta',
+            'rosterTeamName', 'rosterTag', 'rosterTeam2Name', 'rosterTeam2Tag', 'rosterCoach',
+            'matchdayTitle', 'matchdayDate',
+            'imgScale', 'imgX', 'imgY'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => renderGraphic());
+        });
+
+        document.getElementById('inputGrain').addEventListener('input', (e) => {
+            document.getElementById('grainVal').innerText = `${e.target.value}%`;
+            renderGraphic();
+        });
+
+        function bindImageUpload(inputId, btnRemoveId, onLoaded) {
+            const el = document.getElementById(inputId);
+            if (!el) return;
+            el.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        onLoaded(img);
+                        if (btnRemoveId) document.getElementById(btnRemoveId).classList.remove('hidden');
+                        renderGraphic();
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        bindImageUpload('teamLogoUpload', 'btnRemoveTeamLogo', (img) => { teamLogoImg = img; });
+        bindImageUpload('teamLogo2Upload', 'btnRemoveTeamLogo2', (img) => { teamLogo2Img = img; });
+        bindImageUpload('sponsorLogoUpload', 'btnRemoveSponsorLogo', (img) => { sponsorLogoImg = img; });
+        bindImageUpload('subjectUpload', 'btnRemoveImg', (img) => {
+            subjectImg = img;
+            document.getElementById('imgControls').classList.remove('hidden');
+        });
+
+        // =========================================================================
+        // PROGETTO: stato, undo/redo, autosave, file .json, preset
+        // =========================================================================
+        const FIELD_IDS = [
+            'inputTitle', 'inputKicker', 'inputPrize', 'inputSponsor', 'inputGuestLabel', 'inputGuests',
+            'inputExtraInfo', 'inputTwitch', 'inputExtra', 'inputCta',
+            'rosterTeamName', 'rosterTag', 'rosterTeam2Name', 'rosterTeam2Tag', 'rosterCoach',
+            'rosterTeamCount', 'rosterPlayerCount', 'matchdayTitle', 'matchdayDate',
+            'imgScale', 'imgX', 'imgY', 'inputGrain',
+            ...FONT_ROLES.map(r => 'font-' + r.id)
+        ];
+        const IMG_KEYS = ['subject', 'team1', 'team2', 'sponsor'];
+        const HISTORY_MAX = 100;
+        const AUTOSAVE_KEY = 'omnia.autosave';
+        const PRESETS_KEY = 'omnia.presets';
+
+        let history = [];
+        let histIdx = -1;
+        let commitTimer = null;
+        let restoring = false;
+        let DEFAULT_SNAP = null;
+
+        function clone(o) { return JSON.parse(JSON.stringify(o)); }
+        function imgSrc(i) { return i ? i.src : null; }
+
+        function captureCore() {
+            const fields = {};
+            FIELD_IDS.forEach(id => { fields[id] = document.getElementById(id).value; });
+            return {
+                v: 1,
+                mode: currentMode, format: currentFormat, layout: currentLayout, theme: currentTheme,
+                subjectMode, fields,
+                days: tournamentDays, roster1: rosterPlayers, roster2: rosterPlayers2,
+                games: eveningGames, offsets: elementOffsets, fx: imgFx
+            };
+        }
+
+        function captureImages() {
+            return { subject: imgSrc(subjectImg), team1: imgSrc(teamLogoImg), team2: imgSrc(teamLogo2Img), sponsor: imgSrc(sponsorLogoImg) };
+        }
+
+        function snapshot() {
+            return { core: JSON.stringify(captureCore()), imgs: captureImages() };
+        }
+
+        function sameSnap(a, b) {
+            return a.core === b.core && IMG_KEYS.every(k => a.imgs[k] === b.imgs[k]);
+        }
+
+        function loadImage(src) {
+            return new Promise(resolve => {
+                if (!src) return resolve(null);
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = src;
+            });
+        }
+
+        function setStatus(msg) {
+            const el = document.getElementById('projStatus');
+            if (el) el.textContent = msg;
+        }
+
+        async function applyState(core, imgs) {
+            restoring = true;
+            try {
+                imgs = imgs || {};
+                tournamentDays = clone(core.days || tournamentDays);
+                rosterPlayers.length = 0; rosterPlayers.push(...clone(core.roster1 || []));
+                rosterPlayers2.length = 0; rosterPlayers2.push(...clone(core.roster2 || []));
+                eveningGames = clone(core.games || eveningGames);
+                elementOffsets = clone(core.offsets || {});
+                imgFx = Object.assign(defaultFx(), clone(core.fx || {}));
+                renderFxControls();
+                FIELD_IDS.forEach(id => {
+                    const v = core.fields && core.fields[id];
+                    if (v !== undefined) document.getElementById(id).value = v;
+                });
+
+                subjectImg = await loadImage(imgs.subject);
+                teamLogoImg = await loadImage(imgs.team1);
+                teamLogo2Img = await loadImage(imgs.team2);
+                sponsorLogoImg = await loadImage(imgs.sponsor);
+
+                selectedId = null;
+                document.getElementById('grainVal').innerText = `${document.getElementById('inputGrain').value}%`;
+                document.getElementById('imgControls').classList.toggle('hidden', !subjectImg);
+                document.getElementById('btnRemoveImg').classList.toggle('hidden', !subjectImg);
+                document.getElementById('btnRemoveTeamLogo').classList.toggle('hidden', !teamLogoImg);
+                document.getElementById('btnRemoveTeamLogo2').classList.toggle('hidden', !teamLogo2Img);
+                document.getElementById('btnRemoveSponsorLogo').classList.toggle('hidden', !sponsorLogoImg);
+
+                setFormat(core.format || 'post');
+                setLayout(core.layout || 'editorial');
+                setTheme(core.theme || 'paper');
+                setImgMode(core.subjectMode || 'foreground');
+                renderDaysInputs();
+                renderEveningGamesInputs();
+                updateRosterStructure();
+                setMode(core.mode || 'announce');
+            } finally {
+                restoring = false;
+            }
+        }
+
+        // ---- Undo / Redo ----
+        function scheduleCommit() {
+            if (restoring) return;
+            clearTimeout(commitTimer);
+            commitTimer = setTimeout(commitNow, 400);
+        }
+
+        function commitNow() {
+            clearTimeout(commitTimer);
+            if (restoring) return;
+            if (draggingId) { scheduleCommit(); return; }
+            const s = snapshot();
+            if (histIdx >= 0 && sameSnap(history[histIdx], s)) return;
+            history = history.slice(0, histIdx + 1);
+            history.push(s);
+            if (history.length > HISTORY_MAX) history.shift();
+            histIdx = history.length - 1;
+            updateHistoryButtons();
+            autosave(s);
+        }
+
+        function updateHistoryButtons() {
+            const u = document.getElementById('btnUndo');
+            const r = document.getElementById('btnRedo');
+            if (u) u.disabled = histIdx <= 0;
+            if (r) r.disabled = histIdx >= history.length - 1;
+        }
+
+        async function gotoHistory(i) {
+            const s = history[i];
+            histIdx = i;
+            await applyState(JSON.parse(s.core), s.imgs);
+            updateHistoryButtons();
+            autosave(s);
+        }
+
+        function undo() {
+            commitNow();
+            if (histIdx > 0) gotoHistory(histIdx - 1);
+        }
+
+        function redo() {
+            commitNow();
+            if (histIdx < history.length - 1) gotoHistory(histIdx + 1);
+        }
+
+        // ---- Autosave (localStorage) ----
+        function autosave(s) {
+            try {
+                localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ core: s.core, imgs: s.imgs }));
+                setStatus('Autosalvato ✓');
+            } catch (e) {
+                try {
+                    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ core: s.core, imgs: {} }));
+                    setStatus('Autosalvato (senza immagini)');
+                } catch (e2) {
+                    setStatus('Autosave non disponibile');
+                }
+            }
+        }
+
+        async function restoreAutosave() {
+            try {
+                const raw = localStorage.getItem(AUTOSAVE_KEY);
+                if (!raw) return;
+                const data = JSON.parse(raw);
+                await applyState(JSON.parse(data.core), data.imgs);
+                setStatus('Ripristinato ultimo lavoro');
+            } catch (e) {
+                setStatus('Autosave non leggibile');
+            }
+        }
+
+        // ---- Progetto: nuovo / salva / apri ----
+        async function newProject() {
+            if (!confirm('Creare un nuovo progetto? Il lavoro attuale resta recuperabile con Annulla (Ctrl+Z).')) return;
+            commitNow();
+            await applyState(JSON.parse(DEFAULT_SNAP.core), DEFAULT_SNAP.imgs);
+            commitNow();
+        }
+
+        function saveProjectFile() {
+            commitNow();
+            const data = { app: 'omnia-graphics', version: 1, savedAt: new Date().toISOString(), core: captureCore(), imgs: captureImages() };
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const a = document.createElement('a');
+            const day = new Date().toISOString().slice(0, 10);
+            a.download = `omnia-${currentMode}-${day}.omnia.json`;
+            a.href = URL.createObjectURL(blob);
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+            setStatus('Progetto esportato ✓');
+        }
+
+        function openProjectDialog() {
+            document.getElementById('projectOpenInput').click();
+        }
+
+        document.getElementById('projectOpenInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            e.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (data.app !== 'omnia-graphics' || !data.core) throw new Error('formato');
+                    commitNow();
+                    await applyState(data.core, data.imgs);
+                    commitNow();
+                    setStatus(`Aperto: ${file.name}`);
+                } catch (err) {
+                    alert('File progetto non valido.');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        document.addEventListener('keydown', (e) => {
+            const tag = (e.target && e.target.tagName) || '';
+            const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+            const mod = e.ctrlKey || e.metaKey;
+            if (!mod) return;
+            const k = e.key.toLowerCase();
+            if (k === 's') { e.preventDefault(); saveProjectFile(); return; }
+            if (typing) return;
+            if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+            else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+        });
+
+        // ---- Preset team e sponsor ----
+        function loadPresets() {
+            try {
+                const p = JSON.parse(localStorage.getItem(PRESETS_KEY));
+                return { teams: (p && p.teams) || [], sponsors: (p && p.sponsors) || [] };
+            } catch (e) {
+                return { teams: [], sponsors: [] };
+            }
+        }
+
+        function storePresets(p) {
+            try {
+                localStorage.setItem(PRESETS_KEY, JSON.stringify(p));
+                return true;
+            } catch (e) {
+                setStatus('Preset: spazio esaurito');
+                return false;
+            }
+        }
+
+        function fillSelect(id, list, selectedName) {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            sel.innerHTML = '';
+            const first = document.createElement('option');
+            first.value = '';
+            first.textContent = list.length ? '— Preset salvati —' : '— Nessun preset —';
+            sel.appendChild(first);
+            list.forEach(item => {
+                const o = document.createElement('option');
+                o.value = item.name;
+                o.textContent = item.name;
+                if (item.name === selectedName) o.selected = true;
+                sel.appendChild(o);
+            });
+        }
+
+        function refreshPresetSelects(selTeam, selSponsor) {
+            const p = loadPresets();
+            fillSelect('teamPresetSel0', p.teams, selTeam);
+            fillSelect('teamPresetSel1', p.teams, selTeam);
+            fillSelect('sponsorPresetSel', p.sponsors, selSponsor);
+        }
+
+        const TEAM_FIELDS = [
+            { name: 'rosterTeamName', tag: 'rosterTag', btn: 'btnRemoveTeamLogo' },
+            { name: 'rosterTeam2Name', tag: 'rosterTeam2Tag', btn: 'btnRemoveTeamLogo2' }
+        ];
+
+        function saveTeamPreset(idx) {
+            const f = TEAM_FIELDS[idx];
+            const name = document.getElementById(f.name).value.trim();
+            if (!name) { setStatus('Dai un nome al team per salvarlo'); return; }
+            const arr = idx === 0 ? rosterPlayers : rosterPlayers2;
+            const logo = idx === 0 ? teamLogoImg : teamLogo2Img;
+            const preset = { name, tag: document.getElementById(f.tag).value, players: clone(arr), logo: imgSrc(logo) };
+            const p = loadPresets();
+            const i = p.teams.findIndex(t => t.name.toLowerCase() === name.toLowerCase());
+            if (i >= 0) p.teams[i] = preset; else p.teams.push(preset);
+            if (storePresets(p)) {
+                refreshPresetSelects(name);
+                setStatus(`Preset team "${name}" salvato ✓`);
+            }
+        }
+
+        async function loadTeamPreset(idx) {
+            const name = document.getElementById(`teamPresetSel${idx}`).value;
+            if (!name) return;
+            const preset = loadPresets().teams.find(t => t.name === name);
+            if (!preset) return;
+            const f = TEAM_FIELDS[idx];
+            document.getElementById(f.name).value = preset.name;
+            document.getElementById(f.tag).value = preset.tag || '';
+            const arr = idx === 0 ? rosterPlayers : rosterPlayers2;
+            arr.length = 0;
+            arr.push(...clone(preset.players));
+            const img = await loadImage(preset.logo);
+            if (idx === 0) teamLogoImg = img; else teamLogo2Img = img;
+            document.getElementById(f.btn).classList.toggle('hidden', !img);
+            renderRosterInputs();
+            renderGraphic();
+            setStatus(`Preset team "${name}" caricato`);
+        }
+
+        function deleteTeamPreset(idx) {
+            const name = document.getElementById(`teamPresetSel${idx}`).value;
+            if (!name || !confirm(`Eliminare il preset "${name}"?`)) return;
+            const p = loadPresets();
+            p.teams = p.teams.filter(t => t.name !== name);
+            if (storePresets(p)) refreshPresetSelects();
+        }
+
+        function saveSponsorPreset() {
+            const name = document.getElementById('inputSponsor').value.trim();
+            if (!name && !sponsorLogoImg) { setStatus('Inserisci testo o logo sponsor'); return; }
+            const label = name || 'SPONSOR LOGO';
+            const preset = { name: label, logo: imgSrc(sponsorLogoImg) };
+            const p = loadPresets();
+            const i = p.sponsors.findIndex(s => s.name.toLowerCase() === label.toLowerCase());
+            if (i >= 0) p.sponsors[i] = preset; else p.sponsors.push(preset);
+            if (storePresets(p)) {
+                refreshPresetSelects(undefined, label);
+                setStatus(`Preset sponsor "${label}" salvato ✓`);
+            }
+        }
+
+        async function loadSponsorPreset() {
+            const name = document.getElementById('sponsorPresetSel').value;
+            if (!name) return;
+            const preset = loadPresets().sponsors.find(s => s.name === name);
+            if (!preset) return;
+            document.getElementById('inputSponsor').value = preset.name === 'SPONSOR LOGO' && preset.logo ? '' : preset.name;
+            sponsorLogoImg = await loadImage(preset.logo);
+            document.getElementById('btnRemoveSponsorLogo').classList.toggle('hidden', !sponsorLogoImg);
+            renderGraphic();
+            setStatus(`Preset sponsor "${name}" caricato`);
+        }
+
+        function deleteSponsorPreset() {
+            const name = document.getElementById('sponsorPresetSel').value;
+            if (!name || !confirm(`Eliminare il preset "${name}"?`)) return;
+            const p = loadPresets();
+            p.sponsors = p.sponsors.filter(s => s.name !== name);
+            if (storePresets(p)) refreshPresetSelects();
+        }
+
+        // ---- Avvio progetto ----
+        buildFontControls();
+        renderFxControls();
+        refreshOutDirLabel();
+        refreshPresetSelects();
+        DEFAULT_SNAP = snapshot();
+        updateHistoryButtons();
+        restoreAutosave().then(() => commitNow());
+
+        // Init
+        buildGrainTexture();
+        renderDaysInputs();
+        renderRosterInputs();
+        renderEveningGamesInputs();
+        renderGraphic();
+        Promise.all([
+            document.fonts.load('400 60px "Anton"'),
+            document.fonts.load('600 20px "Barlow Condensed"'),
+            document.fonts.load('700 20px "Barlow Condensed"'),
+            document.fonts.load('800 30px "Barlow Condensed"'),
+            document.fonts.load('900 40px "Barlow Condensed"'),
+            document.fonts.load('400 20px "JetBrains Mono"'),
+            document.fonts.load('600 20px "JetBrains Mono"'),
+            document.fonts.load('700 20px "JetBrains Mono"')
+        ]).catch(() => {}).then(() => document.fonts.ready).then(() => renderGraphic());
+    </script>
+</body>
+</html>

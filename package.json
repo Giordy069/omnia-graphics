@@ -1,0 +1,65 @@
+{
+  "name": "omnia-graphics",
+  "version": "1.0.0",
+  "description": "Omnia Art Dept - Graphic Studio per le grafiche del Valorant Gauntlet",
+  "main": "main.js",
+  "author": "Omnia",
+  "private": true,
+  "scripts": {
+    "assets": "node scripts/build-assets.js",
+    "start": "npm run assets && electron .",
+    "dist": "npm run assets && electron-builder --win nsis",
+    "dist:portable": "npm run assets && electron-builder --win portable"
+  },
+  "build": {
+    "appId": "gg.omnia.graphics",
+    "productName": "Omnia Graphics",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "directories": {
+      "output": "release"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Omnia Graphics",
+      "artifactName": "Omnia-Graphics-Setup-${version}.exe"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Giordy069",
+        "repo": "omnia-graphics",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "devDependencies": {
+    "@fontsource/anton": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "electron": "^45.5.0",
+    "electron-builder": "^26.18.0",
+    "tailwindcss": "^3.4.19"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Giordy069/omnia-graphics.git"
+  }
+}
