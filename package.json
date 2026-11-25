@@ -1,6 +1,6 @@
 {
   "name": "omnia-graphics",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Omnia Art Dept - Graphic Studio per le grafiche del Valorant Gauntlet",
   "main": "main.js",
   "author": "Omnia",
@@ -50,6 +50,7 @@
   "devDependencies": {
     "@fontsource/anton": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/cinzel": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "electron": "^45.5.0",
     "electron-builder": "^26.18.0",

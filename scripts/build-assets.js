@@ -10,7 +10,8 @@ fs.mkdirSync(outFonts, { recursive: true });
 const fonts = [
   ['anton', 'Anton', [400]],
   ['barlow-condensed', 'Barlow Condensed', [600, 700, 800, 900]],
-  ['jetbrains-mono', 'JetBrains Mono', [400, 600, 700]]
+  ['jetbrains-mono', 'JetBrains Mono', [400, 600, 700]],
+  ['cinzel', 'Cinzel', [400, 700, 900]]
 ];
 
 let css = '';

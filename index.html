@@ -83,6 +83,15 @@
             <input type="file" id="projectOpenInput" accept=".json,application/json" class="hidden">
         </div>
 
+        <!-- Gioco -->
+        <div>
+            <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Gioco</label>
+            <div class="grid grid-cols-2 gap-1 bg-[#151c24] p-1 border border-slate-800">
+                <button id="game-valorant" onclick="setGame('valorant')" class="py-2 text-xs font-black uppercase tracking-wider bg-[#ff4655] text-white transition">Valorant</button>
+                <button id="game-lol" onclick="setGame('lol')" class="py-2 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white transition">League of Legends</button>
+            </div>
+        </div>
+
         <!-- 0. Selettore Modalità Grafica (Annuncio / Roster / Matchday) -->
         <div>
             <label class="block font-mono-tech text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Tipo di Grafica</label>
@@ -124,12 +133,12 @@
         <!-- 3. Livello Immagine (Agente PNG o Mappa - condiviso) -->
         <div class="bg-[#141b23] border border-slate-800 p-3.5 space-y-3">
             <div class="flex items-center justify-between">
-                <label class="font-mono-tech text-[10px] uppercase tracking-widest text-[#ff4655] font-bold">01 // Livello Agente o Mappa</label>
+                <label id="sec01Label" class="font-mono-tech text-[10px] uppercase tracking-widest text-[#ff4655] font-bold">01 // Livello Agente o Mappa</label>
                 <button id="btnRemoveImg" onclick="removeSubjectImage()" class="hidden font-mono-tech text-[10px] uppercase text-slate-400 hover:text-[#ff4655] underline">Rimuovi</button>
             </div>
 
             <input type="file" id="subjectUpload" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:border-0 file:text-xs file:font-bold file:uppercase file:bg-[#ece8e1] file:text-[#0e1319] hover:file:bg-white cursor-pointer">
-            <p class="font-mono-tech text-[10px] text-slate-400 leading-relaxed">
+            <p id="subjectHint" class="font-mono-tech text-[10px] text-slate-400 leading-relaxed">
                 Carica un <strong>PNG trasparente di un Agente</strong> o una <strong>mappa</strong>: puoi trascinarlo direttamente sull'anteprima e usare la rotella per lo zoom.
             </p>
 
@@ -520,7 +529,8 @@
                 surface: '#0F1419',
                 surfaceText: '#ECE8E1',
                 twitch: '#9146FF',
-                isLight: true
+                isLight: true,
+                tint: 'rgba(255, 70, 85, 0.14)'
             },
             vctDark: {
                 bg: '#0E141B',
@@ -532,7 +542,8 @@
                 surface: '#ECE8E1',
                 surfaceText: '#0E141B',
                 twitch: '#9146FF',
-                isLight: false
+                isLight: false,
+                tint: 'rgba(255, 70, 85, 0.14)'
             },
             night: {
                 bg: '#0A090F',
@@ -544,9 +555,103 @@
                 surface: '#191528',
                 surfaceText: '#F8FAFC',
                 twitch: '#FF4655',
-                isLight: false
+                isLight: false,
+                tint: 'rgba(255, 70, 85, 0.14)'
             }
         };
+
+        // ---- Gioco: Valorant / League of Legends ----
+        const themesLol = {
+            paper: {
+                bg: '#EDE6D6', ink: '#0A1428', inkSoft: 'rgba(10, 20, 40, 0.55)', grid: 'rgba(10, 20, 40, 0.10)',
+                accent: '#0B7A8A', accentText: '#F0E6D2', surface: '#0A1428', surfaceText: '#F0E6D2',
+                twitch: '#9146FF', isLight: true, tint: 'rgba(11, 122, 138, 0.14)'
+            },
+            vctDark: {
+                bg: '#010A13', ink: '#F0E6D2', inkSoft: 'rgba(240, 230, 210, 0.58)', grid: 'rgba(200, 170, 110, 0.12)',
+                accent: '#C8AA6E', accentText: '#010A13', surface: '#0F2236', surfaceText: '#F0E6D2',
+                twitch: '#9146FF', isLight: false, tint: 'rgba(200, 170, 110, 0.14)'
+            },
+            night: {
+                bg: '#04120F', ink: '#DFF7EE', inkSoft: 'rgba(223, 247, 238, 0.55)', grid: 'rgba(46, 230, 176, 0.10)',
+                accent: '#2EE6B0', accentText: '#04120F', surface: '#0C2A24', surfaceText: '#DFF7EE',
+                twitch: '#9146FF', isLight: false, tint: 'rgba(46, 230, 176, 0.14)'
+            }
+        };
+
+        const GAME_DEFS = {
+            valorant: {
+                slug: 'VALORANT', kicker: 'VALORANT SERIES', brand: 'OMNIA VALORANT GAUNTLET',
+                roles: ['DUELIST', 'INITIATOR', 'CONTROLLER', 'SENTINEL', 'FLEX / IGL', 'CREATOR', 'GUEST', 'SUB'],
+                themeLabels: { paper: 'Swiss Paper', vctDark: 'VCT Dark', night: 'Nocturne' },
+                maps: ['ASCENT', 'HAVEN'], fgLabel: 'AGENTE PNG', fgName: 'Agente',
+                sec01: '01 // Livello Agente o Mappa',
+                hint: 'Carica un <strong>PNG trasparente di un Agente</strong> o una <strong>mappa</strong>: puoi trascinarlo direttamente sull\'anteprima e usare la rotella per lo zoom.'
+            },
+            lol: {
+                slug: 'LOL', kicker: 'LEAGUE OF LEGENDS SERIES', brand: 'OMNIA LEAGUE OF LEGENDS GAUNTLET',
+                roles: ['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT', 'CREATOR', 'GUEST', 'SUB'],
+                themeLabels: { paper: 'Parchment', vctDark: 'Hextech Gold', night: 'Shadow Isles' },
+                maps: ['SUMMONER\'S RIFT', 'HOWLING ABYSS'], fgLabel: 'CAMPIONE PNG', fgName: 'Campione',
+                sec01: '01 // Livello Campione o Mappa',
+                hint: 'Carica un <strong>PNG trasparente di un Campione</strong> o una <strong>mappa</strong>: puoi trascinarlo direttamente sull\'anteprima e usare la rotella per lo zoom.'
+            }
+        };
+        // Equivalenze approssimative tra i ruoli dei due giochi (per non perdere i dati cambiando gioco)
+        const ROLE_MAP_V2L = { 'DUELIST': 'TOP', 'INITIATOR': 'JUNGLE', 'CONTROLLER': 'MID', 'FLEX / IGL': 'ADC', 'SENTINEL': 'SUPPORT' };
+        const ROLE_MAP_L2V = { 'TOP': 'DUELIST', 'JUNGLE': 'INITIATOR', 'MID': 'CONTROLLER', 'ADC': 'FLEX / IGL', 'SUPPORT': 'SENTINEL' };
+        let currentGame = 'valorant';
+
+        function getTheme() {
+            return (currentGame === 'lol' ? themesLol : themes)[currentTheme];
+        }
+
+        // Colore del testo/linee SULLA surface (la surface puo' essere scura o chiara a prescindere dal tema)
+        function onSurface(t, alpha) {
+            const h = t.surfaceText.replace('#', '');
+            const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+
+        function setGame(game, remap = true) {
+            if (!GAME_DEFS[game]) return;
+            const prev = currentGame;
+            currentGame = game;
+            const G = GAME_DEFS[game], P = GAME_DEFS[prev];
+
+            ['valorant', 'lol'].forEach(g => {
+                const b = document.getElementById('game-' + g);
+                if (b) b.className = g === game
+                    ? 'py-2 text-xs font-black uppercase tracking-wider bg-[#ff4655] text-white transition'
+                    : 'py-2 text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white transition';
+            });
+            Object.entries(G.themeLabels).forEach(([k, label]) => {
+                const b = document.getElementById('theme-' + k);
+                if (b) b.textContent = label;
+            });
+            const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+            set('sec01Label', el => { el.textContent = G.sec01; });
+            set('subjectHint', el => { el.innerHTML = G.hint; });
+            set('modeForeground', el => { el.textContent = `${G.fgName} (Davanti)`; });
+
+            if (remap && prev !== game) {
+                const kick = document.getElementById('inputKicker');
+                if (kick && kick.value === P.kicker) kick.value = G.kicker;
+                const map = game === 'lol' ? ROLE_MAP_V2L : ROLE_MAP_L2V;
+                [rosterPlayers, rosterPlayers2].forEach(arr => arr.forEach(p => { if (map[p.role]) p.role = map[p.role]; }));
+                eveningGames.forEach(g => {
+                    g.meta = g.meta.split(P.maps[0]).join(G.maps[0]).split(P.maps[1]).join(G.maps[1]);
+                });
+                const tf = document.getElementById('font-title');
+                if (tf) {
+                    if (game === 'lol' && tf.value === 'auto') tf.value = 'cinzel';
+                    else if (game !== 'lol' && tf.value === 'cinzel') tf.value = 'auto';
+                }
+            }
+            renderRosterInputs();
+            renderEveningGamesInputs();
+            renderGraphic();
+        }
 
         function buildGrainTexture() {
             const gCanvas = document.createElement('canvas');
@@ -570,7 +675,8 @@
         const FONT_LIST = {
             anton: { css: '"Anton", sans-serif', label: 'Anton (Poster)' },
             barlow: { css: '"Barlow Condensed", sans-serif', label: 'Barlow Condensed' },
-            mono: { css: '"JetBrains Mono", monospace', label: 'JetBrains Mono (Tech)' }
+            mono: { css: '"JetBrains Mono", monospace', label: 'JetBrains Mono (Tech)' },
+            cinzel: { css: '"Cinzel", serif', label: 'Cinzel (Serif LoL)' }
         };
         const FONT_ROLES = [
             { id: 'title', label: 'Titolo' },
@@ -603,6 +709,7 @@
             let w = parseInt(m[1]);
             if (c === 'anton') w = 400;
             else if (c === 'barlow') w = w < 600 ? 700 : Math.min(900, w);
+            else if (c === 'cinzel') w = w < 600 ? 700 : 900;
             else w = Math.min(700, Math.max(400, w));
             return `${w} ${m[2]} ${f.css}`;
         }
@@ -802,7 +909,7 @@
                 ctx.filter = 'none';
 
                 ctx.globalCompositeOperation = t.isLight ? 'multiply' : 'screen';
-                ctx.fillStyle = t.isLight ? 'rgba(236, 232, 225, 0.3)' : 'rgba(255, 70, 85, 0.14)';
+                ctx.fillStyle = t.isLight ? 'rgba(236, 232, 225, 0.3)' : t.tint;
                 ctx.fillRect(0, 0, W, H);
 
                 hitBoxes.push({ id: 'subject', label: 'MAPPA SFONDO (ROTELLA = ZOOM)', x: Math.max(0, dx), y: Math.max(0, dy), w: Math.min(W, drawW), h: Math.min(H, drawH) });
@@ -818,7 +925,7 @@
                 ctx.shadowOffsetY = 18;
                 drawImageFx(subjectImg, 'subject', dx, dy, baseW, baseH);
 
-                hitBoxes.push({ id: 'subject', label: 'AGENTE PNG (ROTELLA = ZOOM)', x: dx, y: dy, w: baseW, h: baseH });
+                hitBoxes.push({ id: 'subject', label: `${GAME_DEFS[currentGame].fgLabel} (ROTELLA = ZOOM)`, x: dx, y: dy, w: baseW, h: baseH });
             }
             ctx.restore();
         }
@@ -963,7 +1070,7 @@
             canvas.height = H;
 
             hitBoxes = [];
-            const t = themes[currentTheme];
+            const t = getTheme();
             const pad = 54;
 
             // 1. Sfondo Base
@@ -979,7 +1086,7 @@
             drawSwissGrid(ctx, W, H, t, pad);
 
             // 4. Retino Halftone decorativo
-            drawHalftoneBlock(ctx, pad + 2, isStory ? 280 : 190, 260, isStory ? 420 : 320, t.isLight ? 'rgba(15,20,25,0.08)' : 'rgba(255,70,85,0.14)', 15);
+            drawHalftoneBlock(ctx, pad + 2, isStory ? 280 : 190, 260, isStory ? 420 : 320, t.isLight ? 'rgba(15,20,25,0.08)' : t.tint, 15);
 
             // Smistamento render in base alla modalità
             if (currentMode === 'announce') {
@@ -1037,7 +1144,7 @@
         // =========================================================================
         function renderAnnounceMode(W, H, t, pad, isStory) {
             const titleText = (document.getElementById('inputTitle').value || 'GAUNTLET').toUpperCase();
-            const kickerText = (document.getElementById('inputKicker').value || 'VALORANT SERIES').toUpperCase();
+            const kickerText = (document.getElementById('inputKicker').value || GAME_DEFS[currentGame].kicker).toUpperCase();
             const prizeText = (document.getElementById('inputPrize').value || '').trim().toUpperCase();
             const sponsorText = (document.getElementById('inputSponsor').value || '').trim().toUpperCase();
             const twitchText = (document.getElementById('inputTwitch').value || 'TWITCH.TV/OMNIA').toUpperCase();
@@ -1171,7 +1278,7 @@
                         ctx.fillText((d.date || '19 DICEMBRE').toUpperCase(), pad + 54, lowerY + cardH * 0.65, W - pad * 2 - 380);
 
                         const splitX = W - pad - 310;
-                        ctx.strokeStyle = t.isLight ? 'rgba(236,232,225,0.22)' : 'rgba(15,20,25,0.22)';
+                        ctx.strokeStyle = onSurface(t, 0.22);
                         ctx.lineWidth = 2;
                         ctx.beginPath();
                         ctx.moveTo(splitX, lowerY + 24);
@@ -1186,7 +1293,7 @@
                         ctx.font = F('dates', '800 50px "Barlow Condensed", sans-serif');
                         ctx.fillText((d.time || '18:00 CET').toUpperCase(), splitX + 32, lowerY + cardH * 0.64);
 
-                        ctx.fillStyle = t.isLight ? 'rgba(236,232,225,0.65)' : 'rgba(15,20,25,0.65)';
+                        ctx.fillStyle = onSurface(t, 0.65);
                         ctx.font = F('dates', '600 16px "JetBrains Mono", monospace');
                         ctx.fillText((d.label || 'MODE: GAUNTLET').toUpperCase(), splitX + 32, lowerY + cardH * 0.84, 260);
                     } else {
@@ -1194,7 +1301,7 @@
                         days.forEach((d, i) => {
                             const ry = lowerY + 12 + i * rowH;
                             if (i > 0) {
-                                ctx.strokeStyle = t.isLight ? 'rgba(236,232,225,0.18)' : 'rgba(15,20,25,0.18)';
+                                ctx.strokeStyle = onSurface(t, 0.18);
                                 ctx.lineWidth = 1.5;
                                 ctx.beginPath();
                                 ctx.moveTo(pad + 44, ry);
@@ -1208,7 +1315,7 @@
                             ctx.textAlign = 'left';
                             ctx.fillText((d.date || '').toUpperCase(), pad + 48, cy, 290);
 
-                            ctx.fillStyle = t.isLight ? 'rgba(236,232,225,0.75)' : 'rgba(15,20,25,0.75)';
+                            ctx.fillStyle = onSurface(t, 0.75);
                             ctx.font = F('dates', `700 ${isStory ? 22 : 18}px "JetBrains Mono", monospace`);
                             ctx.fillText((d.label || '').toUpperCase(), pad + 355, cy - 3, 390);
 
@@ -1373,7 +1480,7 @@
                 ctx.fillStyle = t.inkSoft;
                 ctx.font = '600 17px "JetBrains Mono", monospace';
                 ctx.textAlign = 'left';
-                ctx.fillText('OMNIA VALORANT GAUNTLET', pad + 168, pad + 64);
+                ctx.fillText(GAME_DEFS[currentGame].brand, pad + 168, pad + 64);
             });
 
             withDraggable('rosterBadge', 'BADGE ROSTER', W - pad - 266, pad + 24, 242, 42, () => {
@@ -1482,7 +1589,7 @@
                             ctx.textAlign = 'center';
                             ctx.fillText(badgeText, rx + rw - bw / 2 - 16, py + rowH / 2 + 6, bw - 8);
                         } else {
-                            ctx.fillStyle = t.isLight ? 'rgba(236,232,225,0.72)' : 'rgba(15,20,25,0.72)';
+                            ctx.fillStyle = onSurface(t, 0.72);
                             ctx.font = `700 ${compact ? 15 : 18}px "JetBrains Mono", monospace`;
                             ctx.fillText((p.role || 'FLEX').toUpperCase(), rx + rw - 22, py + rowH * 0.58);
                         }
@@ -1604,7 +1711,7 @@
                     ctx.fillRect(pad, gy, cardW, cardH);
 
                     const timeW = 165;
-                    ctx.fillStyle = isMain ? t.accent : (t.isLight ? 'rgba(236,232,225,0.12)' : 'rgba(15,20,25,0.12)');
+                    ctx.fillStyle = isMain ? t.accent : (onSurface(t, 0.12));
                     ctx.fillRect(pad, gy, timeW, cardH);
 
                     if (isMain) {
@@ -1666,7 +1773,7 @@
                 ctx.textAlign = 'left';
                 ctx.fillText(twitchText, pad + 64, footerY - 2);
 
-                drawSponsorRight(ctx, W - pad - 20, footerY - 14, 190, 44, t, '', 'OMNIA VALORANT GAUNTLET');
+                drawSponsorRight(ctx, W - pad - 20, footerY - 14, 190, 44, t, '', GAME_DEFS[currentGame].brand);
             });
         }
 
@@ -2021,7 +2128,7 @@
 
         function renderRosterInputs() {
             const count = parseInt(document.getElementById('rosterPlayerCount').value || '5');
-            const roles = ['DUELIST', 'INITIATOR', 'CONTROLLER', 'SENTINEL', 'FLEX / IGL', 'CREATOR', 'GUEST', 'SUB'];
+            const roles = GAME_DEFS[currentGame].roles;
 
             function fillContainer(containerId, arr, teamIdx) {
                 const container = document.getElementById(containerId);
@@ -2229,7 +2336,7 @@
         }
 
         function exportFileName(fmt) {
-            return `OMNIA_GAUNTLET_${currentMode.toUpperCase()}_${fmt === 'post' ? 'POST_4x5' : 'STORIA_9x16'}.png`;
+            return `OMNIA_GAUNTLET_${GAME_DEFS[currentGame].slug}_${currentMode.toUpperCase()}_${fmt === 'post' ? 'POST_4x5' : 'STORIA_9x16'}.png`;
         }
 
         // Renderizza pulito (senza overlay editor) nel formato richiesto e ripristina l'anteprima
@@ -2354,7 +2461,7 @@
             FIELD_IDS.forEach(id => { fields[id] = document.getElementById(id).value; });
             return {
                 v: 1,
-                mode: currentMode, format: currentFormat, layout: currentLayout, theme: currentTheme,
+                game: currentGame, mode: currentMode, format: currentFormat, layout: currentLayout, theme: currentTheme,
                 subjectMode, fields,
                 days: tournamentDays, roster1: rosterPlayers, roster2: rosterPlayers2,
                 games: eveningGames, offsets: elementOffsets, fx: imgFx
@@ -2417,6 +2524,8 @@
                 document.getElementById('btnRemoveTeamLogo2').classList.toggle('hidden', !teamLogo2Img);
                 document.getElementById('btnRemoveSponsorLogo').classList.toggle('hidden', !sponsorLogoImg);
 
+                currentGame = GAME_DEFS[core.game] ? core.game : 'valorant';
+                setGame(currentGame, false);
                 setFormat(core.format || 'post');
                 setLayout(core.layout || 'editorial');
                 setTheme(core.theme || 'paper');
@@ -2703,6 +2812,8 @@
         renderGraphic();
         Promise.all([
             document.fonts.load('400 60px "Anton"'),
+            document.fonts.load('700 20px "Cinzel"'),
+            document.fonts.load('900 20px "Cinzel"'),
             document.fonts.load('600 20px "Barlow Condensed"'),
             document.fonts.load('700 20px "Barlow Condensed"'),
             document.fonts.load('800 30px "Barlow Condensed"'),
