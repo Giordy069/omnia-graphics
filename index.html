@@ -27,6 +27,28 @@
         input[type="range"] {
             accent-color: #ff4655;
         }
+        /* Toolbar anteprima */
+        .tb-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; font: 700 11px 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .05em; background: #151c24; border: 1px solid #334155; color: #e2e8f0; transition: background-color .15s, border-color .15s, color .15s; }
+        .tb-btn:hover:not(:disabled) { background: #ff4655; border-color: #ff4655; color: #fff; }
+        .tb-btn svg { width: 15px; height: 15px; flex: none; }
+        .tb-sep { width: 1px; align-self: stretch; background: #1e293b; margin: 0 4px; }
+
+        /* Sidebar: fissa a sinistra su schermi larghi, cassetto a scomparsa su schermi stretti */
+        #sidebar { width: 410px; height: 100vh; position: sticky; top: 0; overflow-y: auto; }
+        #drawerToggle, #drawerClose, #drawerBackdrop { display: none; }
+        @media (max-width: 1179px) {
+            #sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: min(410px, 92vw); z-index: 60; transform: translateX(-102%); transition: transform .25s cubic-bezier(.2,.8,.2,1); box-shadow: none; }
+            body.drawer-open #sidebar { transform: none; box-shadow: 24px 0 60px rgba(0,0,0,.6); }
+            #drawerToggle, #drawerClose { display: inline-flex; }
+            #drawerBackdrop { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none; transition: opacity .25s; }
+            body.drawer-open #drawerBackdrop { opacity: 1; pointer-events: auto; }
+        }
+        @media (max-width: 760px) {
+            .tb-label, #dragBar { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #sidebar, #drawerBackdrop { transition: none; }
+        }
         button:disabled { opacity: .35; cursor: not-allowed; }
         button:disabled:hover { background-color: #151c24; border-color: #334155; }
         ::-webkit-scrollbar {
@@ -43,10 +65,10 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col lg:flex-row">
+<body class="min-h-screen flex flex-row">
 
-    <!-- Sidebar Controlli -->
-    <aside class="w-full lg:w-[410px] bg-[#0e1319] border-b lg:border-b-0 lg:border-r border-slate-800/80 p-5 flex flex-col gap-5 overflow-y-auto lg:h-screen shrink-0">
+    <!-- Sidebar Controlli (cassetto a scomparsa su schermi stretti) -->
+    <aside id="sidebar" class="bg-[#0e1319] border-r border-slate-800/80 p-5 flex flex-col gap-5 shrink-0">
 
         <!-- Header Studio -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-4">
@@ -62,25 +84,7 @@
                     <p class="font-mono-tech text-[10px] text-slate-400 tracking-widest uppercase mt-0.5">Interactive Suite // v4.0</p>
                 </div>
             </div>
-            <button onclick="resetAllOffsets()" title="Ripristina posizioni originali" class="font-mono-tech text-[10px] uppercase px-2.5 py-1.5 bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-300 hover:text-white transition">
-                ↺ Reset Layout
-            </button>
-        </div>
-
-        <!-- Progetto: nuovo / apri / salva / undo / redo -->
-        <div class="bg-[#141b23] border border-slate-800 p-2.5 space-y-2">
-            <div class="flex items-center justify-between">
-                <label class="font-mono-tech text-[10px] uppercase tracking-widest text-slate-300 font-bold">Progetto</label>
-                <span id="projStatus" class="font-mono-tech text-[10px] text-slate-500">—</span>
-            </div>
-            <div class="grid grid-cols-5 gap-1">
-                <button onclick="newProject()" title="Nuovo progetto" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">Nuovo</button>
-                <button onclick="openProjectDialog()" title="Apri progetto (.json)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">Apri</button>
-                <button onclick="saveProjectFile()" title="Salva progetto (Ctrl+S)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">Salva</button>
-                <button id="btnUndo" onclick="undo()" title="Annulla (Ctrl+Z)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">↶</button>
-                <button id="btnRedo" onclick="redo()" title="Ripeti (Ctrl+Y)" class="py-1.5 text-[11px] font-black uppercase tracking-wider bg-[#151c24] hover:bg-[#ff4655] border border-slate-700 hover:border-[#ff4655] text-slate-200 transition">↷</button>
-            </div>
-            <input type="file" id="projectOpenInput" accept=".json,application/json" class="hidden">
+            <button id="drawerClose" type="button" onclick="closeDrawer()" title="Chiudi pannello (Esc)" class="tb-btn" aria-label="Chiudi pannello"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
         </div>
 
         <!-- Gioco -->
@@ -408,18 +412,39 @@
         </div>
     </aside>
 
+    <div id="drawerBackdrop" onclick="closeDrawer()"></div>
+
     <!-- Area Anteprima -->
-    <main class="flex-1 flex flex-col items-center justify-center p-5 lg:p-8 bg-[#06080b] relative overflow-hidden">
+    <main class="flex-1 min-w-0 h-screen flex flex-col bg-[#06080b] relative overflow-hidden">
         <!-- Sfondo griglia da scrivania grafica -->
         <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px); background-size: 48px 48px;"></div>
 
-        <div class="relative z-10 flex flex-col items-center gap-3">
+        <!-- Toolbar: dettagli (schermi stretti) a sinistra, azioni progetto in alto a destra -->
+        <div class="relative z-20 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-slate-800/70 bg-[#0a0e13]/90">
+            <div class="flex items-center gap-3 min-w-0">
+                <button id="drawerToggle" type="button" onclick="toggleDrawer()" title="Apri pannello dettagli" class="tb-btn" aria-label="Apri pannello dettagli"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span class="tb-label">Dettagli</span></button>
+                <span id="projStatus" class="font-mono-tech text-[10px] text-slate-500 truncate">—</span>
+            </div>
+            <div class="flex items-center gap-1.5 justify-end">
+                <button id="btnUndo" type="button" onclick="undo()" title="Annulla (Ctrl+Z)" class="tb-btn" aria-label="Annulla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button>
+                <button id="btnRedo" type="button" onclick="redo()" title="Ripeti (Ctrl+Y)" class="tb-btn" aria-label="Ripeti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg></button>
+                <span class="tb-sep"></span>
+                <button type="button" onclick="openProjectDialog()" title="Carica progetto (.json)" class="tb-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="tb-label">Carica</span></button>
+                <button type="button" onclick="saveProjectFile()" title="Salva progetto (Ctrl+S)" class="tb-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span class="tb-label">Salva</span></button>
+                <button type="button" onclick="newProject()" title="Nuovo progetto" class="tb-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="tb-label">Nuovo</span></button>
+                <span class="tb-sep"></span>
+                <button type="button" onclick="resetAllOffsets()" title="Ripristina posizioni e scale originali" class="tb-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/></svg><span class="tb-label">Reset layout</span></button>
+                <input type="file" id="projectOpenInput" accept=".json,application/json" class="hidden">
+            </div>
+        </div>
+
+        <div class="relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center gap-3 p-4 lg:p-6">
             <!-- Barra stato Drag & Drop -->
-            <div class="flex items-center gap-3 bg-[#0e1319]/90 border border-slate-800 px-3.5 py-1.5 text-[11px] font-mono-tech text-slate-300">
+            <div id="dragBar" class="flex items-center gap-3 bg-[#0e1319]/90 border border-slate-800 px-3.5 py-1.5 text-[11px] font-mono-tech text-slate-300">
                 <span class="w-2 h-2 rounded-full bg-[#ff4655] animate-pulse"></span>
                 <span id="dragHint">CLIC = SELEZIONA • TRASCINA = SPOSTA • ANGOLI = RIDIMENSIONA • ALT = NO SNAP • DOPPIO CLIC = RESET</span>
             </div>
-            <canvas id="graphicCanvas" class="max-h-[82vh] w-auto max-w-full cursor-default"></canvas>
+            <canvas id="graphicCanvas" class="max-h-[calc(100vh-150px)] w-auto max-w-full cursor-default"></canvas>
         </div>
     </main>
 
@@ -2611,6 +2636,13 @@
                 setStatus('Autosave non leggibile');
             }
         }
+
+        // ---- Cassetto laterale (schermi stretti) ----
+        function openDrawer() { document.body.classList.add('drawer-open'); }
+        function closeDrawer() { document.body.classList.remove('drawer-open'); }
+        function toggleDrawer() { document.body.classList.toggle('drawer-open'); }
+        window.matchMedia('(min-width: 1180px)').addEventListener('change', (e) => { if (e.matches) closeDrawer(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
         // ---- Progetto: nuovo / salva / apri ----
         async function newProject() {
