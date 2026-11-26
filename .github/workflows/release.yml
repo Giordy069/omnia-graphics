@@ -1,0 +1,38 @@
+# Pubblica una nuova versione: basta creare e pushare un tag, es.  git tag v1.2.0 && git push origin v1.2.0
+# GitHub costruisce l'installer e lo carica nel release (con latest.yml per l'aggiornamento automatico).
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Il tag deve coincidere con la versione di package.json
+        shell: bash
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$PKG" ]; then
+            echo "Il tag $GITHUB_REF_NAME non coincide con la versione in package.json ($PKG)"
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Build e pubblicazione
+        run: npm run dist -- --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

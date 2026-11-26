@@ -32,7 +32,7 @@ ipcMain.handle('pick-folder', async (e) => {
   return r.canceled ? null : r.filePaths[0];
 });
 
-// Salva PNG (data URL) nella cartella scelta. Accetta solo nomi semplici .png.
+// Salva PNG/JPG (data URL) nella cartella scelta. Accetta solo nomi semplici .png/.jpg con data URL coerente.
 ipcMain.handle('save-files', async (_e, dir, files) => {
   if (typeof dir !== 'string' || !fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
     throw new Error('Cartella non valida');
@@ -40,8 +40,9 @@ ipcMain.handle('save-files', async (_e, dir, files) => {
   const saved = [];
   for (const f of files) {
     const name = path.basename(String(f.name));
-    const prefix = 'data:image/png;base64,';
-    if (!/^[\w.\-]+\.png$/i.test(name) || typeof f.dataUrl !== 'string' || !f.dataUrl.startsWith(prefix)) {
+    const isJpg = /\.jpe?g$/i.test(name);
+    const prefix = isJpg ? 'data:image/jpeg;base64,' : 'data:image/png;base64,';
+    if (!/^[\w.\-]+\.(png|jpe?g)$/i.test(name) || typeof f.dataUrl !== 'string' || !f.dataUrl.startsWith(prefix)) {
       throw new Error('File non valido: ' + name);
     }
     const target = path.join(dir, name);

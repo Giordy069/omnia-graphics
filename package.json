@@ -1,6 +1,6 @@
 {
   "name": "omnia-graphics",
-  "version": "1.0.2",
+  "version": "1.2.0",
   "description": "Omnia Art Dept - Graphic Studio per le grafiche del Valorant Gauntlet",
   "main": "main.js",
   "author": "Omnia",
@@ -9,7 +9,9 @@
     "assets": "node scripts/build-assets.js",
     "start": "npm run assets && electron .",
     "dist": "npm run assets && electron-builder --win nsis",
-    "dist:portable": "npm run assets && electron-builder --win portable"
+    "dist:portable": "npm run assets && electron-builder --win portable",
+    "test": "npm run assets && node tests/logic.test.js && node tests/modes.test.js && node tests/finish.test.js && node tests/team.test.js && node tests/dialogs.test.js",
+    "pack": "npm run assets && electron-builder --dir"
   },
   "build": {
     "appId": "gg.omnia.graphics",
@@ -54,7 +56,9 @@
     "@fontsource/jetbrains-mono": "^5.3.0",
     "electron": "^45.5.0",
     "electron-builder": "^26.18.0",
-    "tailwindcss": "^3.4.19"
+    "tailwindcss": "^3.4.19",
+    "jsdom": "^26.0.0",
+    "@napi-rs/canvas": "^0.1.0"
   },
   "dependencies": {
     "electron-updater": "^6.8.11"
