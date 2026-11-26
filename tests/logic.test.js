@@ -3,7 +3,7 @@ const fs = require('fs');
 const html = fs.readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8');
 const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'http://localhost/', pretendToBeVisual: true,
   beforeParse(w) {
-    const noop = new Proxy(function(){}, { get: (t, k) => k === 'measureText' ? () => ({ width: 10 }) : (k === 'createPattern' ? () => ({}) : noop), apply: () => noop, set: (t,k,v) => { if (k==="font") (global.__fonts=global.__fonts||[]).push(v); if (k==="textAlign") (global.__al=global.__al||[]).push(v); if (k==="fillStyle") (global.__fills=global.__fills||[]).push(v); return true; } });
+    const noop = new Proxy(function(){}, { get: (t, k) => k === 'measureText' ? () => ({ width: 10 }) : (k === 'createPattern' ? () => ({}) : noop), apply: () => noop, set: (t,k,v) => { if (k==="font") (global.__fonts=global.__fonts||[]).push(v); if (k==="textAlign") (global.__al=global.__al||[]).push(v); if (k==="fillStyle") (global.__fills=global.__fills||[]).push(typeof v === "string" ? v : ""); return true; } });
     w.HTMLCanvasElement.prototype.getContext = () => noop;
     w.HTMLCanvasElement.prototype.toDataURL = () => 'data:image/png;base64,AAAA';
     w.Image = class { set src(v) { this._s = v; this.width = 10; this.height = 10; setTimeout(() => this.onload && this.onload(), 0); } get src() { return this._s; } };
@@ -153,7 +153,7 @@ const ev = (s) => w.eval(s);
   ev("setGame('valorant')");
   ok(ev('currentTheme') === 'paper', 'tema fallback dopo cambio gioco: ' + ev('currentTheme'));
   // ---- sezioni ----
-  ok(d.querySelectorAll('details.sec').length === 11 && d.querySelectorAll('details.sec[open]').length === 2, 'sezioni 11, 2 aperte');
+  ok(d.querySelectorAll('details.sec').length === 12 && d.querySelectorAll('details.sec[open]').length === 2, 'sezioni 12, 2 aperte');
   ok(!!d.querySelector('details.sec[data-sec="content"] #panel-announce') && !!d.querySelector('details.sec[data-sec="palette"] #themeButtons'), 'contenuti nelle sezioni');
   // vecchi progetti a 6 giocatori
   const old = JSON.parse(ev('snapshot().core')); old.roster1 = old.roster1.slice(0, 6); old.roster2 = old.roster2.slice(0, 6);

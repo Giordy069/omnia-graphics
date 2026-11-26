@@ -78,6 +78,113 @@ ipcMain.handle('reveal-file', (_e, p) => {
   if (typeof p === 'string' && isAllowedDir(path.dirname(p)) && fs.existsSync(p)) shell.showItemInFolder(p);
 });
 
+// ---- Export video MP4: i fotogrammi (JPEG) arrivano uno alla volta e vengono passati a FFmpeg ----
+const { spawn } = require('child_process');
+function ffmpegBin() {
+  let p = require('ffmpeg-static');
+  return typeof p === 'string' ? p.replace('app.asar', 'app.asar.unpacked') : null;
+}
+const videoJobs = new Map();
+let videoSeq = 0;
+const MAX_VIDEO_FRAMES = 60 * 90; // 90 secondi a 60 fps
+
+// Musica: il file arriva dal renderer, viene scritto in una cartella temporanea e referenziato solo tramite id
+const audioFiles = new Map();
+let audioSeq = 0;
+const AUDIO_EXT = /\.(mp3|wav|m4a|aac|ogg|flac)$/i;
+const MAX_AUDIO_BYTES = 80 * 1024 * 1024;
+function dropAudio(id) {
+  const p = audioFiles.get(id);
+  audioFiles.delete(id);
+  if (p) { try { fs.unlinkSync(p); } catch (e) {} }
+}
+
+ipcMain.handle('audio-save', async (_e, name, data) => {
+  const base = path.basename(String(name));
+  if (!AUDIO_EXT.test(base)) throw new Error('Formato audio non supportato');
+  const buf = Buffer.from(data);
+  if (buf.length < 100 || buf.length > MAX_AUDIO_BYTES) throw new Error('File audio non valido o troppo grande');
+  audioFiles.forEach((_p, id) => dropAudio(id)); // una sola musica alla volta
+  const id = String(++audioSeq);
+  const target = path.join(require('os').tmpdir(), `omnia-audio-${process.pid}-${id}${path.extname(base).toLowerCase()}`);
+  fs.writeFileSync(target, buf);
+  audioFiles.set(id, target);
+  return id;
+});
+
+ipcMain.handle('audio-clear', async (_e, id) => { dropAudio(String(id)); });
+app.on('before-quit', () => { audioFiles.forEach((_p, id) => dropAudio(id)); });
+
+ipcMain.handle('video-start', async (_e, dir, name, fps, w, h, audio) => {
+  if (!isAllowedDir(dir)) throw new Error('DIR_NON_AUTORIZZATA');
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) throw new Error('Cartella non valida');
+  if (typeof name !== 'string' || !/^[\w.\-]+\.mp4$/i.test(path.basename(name))) throw new Error('Nome file non valido');
+  if (!Number.isInteger(fps) || fps < 12 || fps > 60) throw new Error('FPS non validi');
+  if (!Number.isInteger(w) || !Number.isInteger(h) || w < 64 || h < 64 || w > 2160 || h > 3840 || w % 2 || h % 2) throw new Error('Dimensioni non valide');
+  if (videoJobs.size >= 1) throw new Error('Un export video e\' gia\' in corso');
+  const bin = ffmpegBin();
+  if (!bin || !fs.existsSync(bin)) throw new Error('FFmpeg non trovato');
+  const target = path.join(dir, path.basename(name));
+  const args = ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-'];
+  if (audio) {
+    const num = (v, lo, hi) => typeof v === 'number' && isFinite(v) && v >= lo && v <= hi;
+    const apath = audioFiles.get(String(audio.id));
+    if (!apath || !fs.existsSync(apath)) throw new Error('Musica non disponibile: ricaricala');
+    if (!num(audio.start, 0, 36000) || !num(audio.volume, 0, 1) || !num(audio.fadeIn, 0, 10) || !num(audio.fadeOut, 0, 10) || !num(audio.dur, 0.5, 90)) throw new Error('Parametri audio non validi');
+    const fo = audio.fadeOut > 0 ? `,afade=t=out:st=${Math.max(0, audio.dur - audio.fadeOut).toFixed(3)}:d=${audio.fadeOut.toFixed(3)}` : '';
+    const fi = audio.fadeIn > 0 ? `,afade=t=in:st=0:d=${audio.fadeIn.toFixed(3)}` : '';
+    args.push('-stream_loop', '-1', '-ss', String(audio.start), '-t', String(audio.dur), '-i', apath);
+    args.push('-map', '0:v', '-map', '1:a', '-af', `volume=${audio.volume.toFixed(3)}${fi}${fo},apad`, '-c:a', 'aac', '-b:a', '192k', '-t', String(audio.dur));
+  } else {
+    args.push('-an');
+  }
+  args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', target);
+  const proc = spawn(bin, args, { windowsHide: true, stdio: ['pipe', 'ignore', 'pipe'] });
+  const job = { proc, target, frames: 0, err: '', failed: null, done: null };
+  job.done = new Promise((resolve) => proc.on('close', (code) => resolve(code)));
+  proc.stderr.on('data', (d) => { job.err = (job.err + d).slice(-600); });
+  proc.on('error', (e) => { job.failed = e.message; });
+  proc.stdin.on('error', (e) => { job.failed = job.failed || e.message; });
+  const id = String(++videoSeq);
+  videoJobs.set(id, job);
+  return id;
+});
+
+ipcMain.handle('video-frame', async (_e, id, dataUrl) => {
+  const job = videoJobs.get(id);
+  if (!job) throw new Error('Export video non attivo');
+  if (job.failed) throw new Error('FFmpeg: ' + job.failed);
+  const prefix = 'data:image/jpeg;base64,';
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith(prefix)) throw new Error('Fotogramma non valido');
+  if (++job.frames > MAX_VIDEO_FRAMES) throw new Error('Video troppo lungo');
+  const ok = job.proc.stdin.write(Buffer.from(dataUrl.slice(prefix.length), 'base64'));
+  if (!ok) await new Promise((r) => job.proc.stdin.once('drain', r));
+  return job.frames;
+});
+
+ipcMain.handle('video-finish', async (_e, id) => {
+  const job = videoJobs.get(id);
+  if (!job) throw new Error('Export video non attivo');
+  job.proc.stdin.end();
+  const code = await job.done;
+  videoJobs.delete(id);
+  if (code !== 0 || job.failed) {
+    try { fs.unlinkSync(job.target); } catch (e) {}
+    throw new Error('FFmpeg: ' + (job.err.trim() || job.failed || 'codice ' + code));
+  }
+  return job.target;
+});
+
+ipcMain.handle('video-cancel', async (_e, id) => {
+  const job = videoJobs.get(id);
+  if (!job) return;
+  videoJobs.delete(id);
+  try { job.proc.stdin.destroy(); job.proc.kill(); } catch (e) {}
+  await Promise.race([job.done, new Promise((r) => setTimeout(r, 2000))]);
+  try { fs.unlinkSync(job.target); } catch (e) {}
+});
+app.on('before-quit', () => { videoJobs.forEach((j) => { try { j.proc.kill(); } catch (e) {} }); });
+
 // Auto-aggiornamento: attivo solo nell'app installata e solo se la build ha un feed (app-update.yml)
 function setupAutoUpdate(win) {
   const feed = path.join(process.resourcesPath || '', 'app-update.yml');
