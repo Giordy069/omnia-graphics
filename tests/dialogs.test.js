@@ -40,9 +40,12 @@ const { open } = require('./harness');
   // annidati
   ev("showLoading('a'); showLoading('b'); hideLoading()"); ok(!hidden('loader'), 'annidato: resta aperto'); ev('hideLoading()'); ok(hidden('loader'), 'annidato: chiude alla fine');
   // export mostra il loader
-  ev('window.omnia={pickFolder:async()=>"C:/o",saveFiles:async(dd,f)=>{await new Promise(r=>setTimeout(r,150));return f.map(x=>dd+"/"+x.name)},revealFile(){}}; localStorage.setItem("omnia.outDir","C:/o")');
+  ev('window.omnia={pickFolder:async()=>"C:/o",saveFiles:async(dd,f)=>{await new Promise(r=>setTimeout(r,900));return f.map(x=>dd+"/"+x.name)},revealFile(){}}; localStorage.setItem("omnia.outDir","C:/o")');
   const ex = ev('exportBoth()'); await sleep(250);
-  ok(!hidden('loader') || true, 'export in corso');
+  ok(!hidden('loader'), 'loader visibile durante l\'export: ' + d.getElementById('ldText').textContent);
+  ev("window.__u = 0; undo = function(){ window.__u++; }");
+  d.dispatchEvent(new h.w.KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
+  ok(ev('window.__u') === 0, 'Ctrl+Z ignorato durante il caricamento');
   await ex; ok(hidden('loader'), 'export finito: loader chiuso');
   console.log(fails ? 'FAILS ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

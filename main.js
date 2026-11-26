@@ -19,9 +19,24 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js')
     }
   });
+  // L'app non deve mai aprire altre pagine né navigare fuori da index.html
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (ev) => ev.preventDefault());
   win.loadFile(path.join(__dirname, 'index.html'));
   return win;
 }
+
+// Cartelle di export autorizzate: solo quelle scelte dall'utente con il selettore di sistema (ricordate tra i riavvii)
+const dirsFile = () => path.join(app.getPath('userData'), 'export-dirs.json');
+function loadAllowedDirs() {
+  try { const l = JSON.parse(fs.readFileSync(dirsFile(), 'utf8')); return new Set(Array.isArray(l) ? l.filter(x => typeof x === 'string') : []); } catch (e) { return new Set(); }
+}
+function allowDir(dir) {
+  const set = loadAllowedDirs();
+  set.add(path.resolve(dir));
+  try { fs.writeFileSync(dirsFile(), JSON.stringify([...set].slice(-10))); } catch (e) {}
+}
+const isAllowedDir = (dir) => typeof dir === 'string' && loadAllowedDirs().has(path.resolve(dir));
 
 ipcMain.handle('pick-folder', async (e) => {
   const win = BrowserWindow.fromWebContents(e.sender);
@@ -29,16 +44,23 @@ ipcMain.handle('pick-folder', async (e) => {
     title: 'Scegli la cartella di esportazione',
     properties: ['openDirectory', 'createDirectory']
   });
-  return r.canceled ? null : r.filePaths[0];
+  if (r.canceled) return null;
+  allowDir(r.filePaths[0]);
+  return r.filePaths[0];
 });
+
+const MAX_FILES = 30;
+const MAX_TOTAL_BYTES = 200 * 1024 * 1024;
 
 // Salva PNG/JPG (data URL) nella cartella scelta. Accetta solo nomi semplici .png/.jpg con data URL coerente.
 ipcMain.handle('save-files', async (_e, dir, files) => {
-  if (typeof dir !== 'string' || !fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
-    throw new Error('Cartella non valida');
-  }
+  if (!isAllowedDir(dir)) throw new Error('DIR_NON_AUTORIZZATA');
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) throw new Error('Cartella non valida');
+  if (!Array.isArray(files) || files.length === 0 || files.length > MAX_FILES) throw new Error('Elenco file non valido');
+  if (files.reduce((n, f) => n + (f && typeof f.dataUrl === 'string' ? f.dataUrl.length : 0), 0) > MAX_TOTAL_BYTES * 1.4) throw new Error('File troppo grandi');
   const saved = [];
   for (const f of files) {
+    if (!f || typeof f !== 'object') throw new Error('File non valido');
     const name = path.basename(String(f.name));
     const isJpg = /\.jpe?g$/i.test(name);
     const prefix = isJpg ? 'data:image/jpeg;base64,' : 'data:image/png;base64,';
@@ -53,7 +75,7 @@ ipcMain.handle('save-files', async (_e, dir, files) => {
 });
 
 ipcMain.handle('reveal-file', (_e, p) => {
-  if (typeof p === 'string' && fs.existsSync(p)) shell.showItemInFolder(p);
+  if (typeof p === 'string' && isAllowedDir(path.dirname(p)) && fs.existsSync(p)) shell.showItemInFolder(p);
 });
 
 // Auto-aggiornamento: attivo solo nell'app installata e solo se la build ha un feed (app-update.yml)

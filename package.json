@@ -10,7 +10,7 @@
     "start": "npm run assets && electron .",
     "dist": "npm run assets && electron-builder --win nsis",
     "dist:portable": "npm run assets && electron-builder --win portable",
-    "test": "npm run assets && node tests/logic.test.js && node tests/modes.test.js && node tests/finish.test.js && node tests/team.test.js && node tests/dialogs.test.js",
+    "test": "npm run assets && node tests/logic.test.js && node tests/modes.test.js && node tests/finish.test.js && node tests/team.test.js && node tests/dialogs.test.js && node tests/main.test.js && node tests/a11y.test.js",
     "pack": "npm run assets && electron-builder --dir"
   },
   "build": {

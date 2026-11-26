@@ -33,7 +33,11 @@
         details.sec > summary::-webkit-details-marker { display: none; }
         details.sec > summary:hover { background: #141b23; }
         details.sec[open] > summary { background: #141b23; border-bottom: 1px solid #1e293b; }
-        .sec-num { font: 700 10px 'JetBrains Mono', monospace; color: #ff4655; }
+        .sec-num { font: 700 11px 'JetBrains Mono', monospace; color: #ff4655; }
+        /* Accessibilita': focus ben visibile da tastiera, testi minimi leggibili, contrasto del grigio tenue */
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px solid #00F0FF !important; outline-offset: 2px; }
+        .text-\[8px\], .text-\[9px\], .text-\[10px\] { font-size: 11px !important; }
+        .text-slate-500 { color: #8a98aa !important; }
         .sec-title { font: 800 15px 'Barlow Condensed', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #fff; }
         .sec-hint { margin-left: auto; font: 600 9px 'JetBrains Mono', monospace; letter-spacing: .08em; text-transform: uppercase; color: #64748b; }
         details.sec > summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8; transform: rotate(45deg); margin: -3px 2px 0 6px; transition: transform .15s; }
@@ -790,7 +794,7 @@
                         <span class="w-2 h-2 rounded-full bg-[#ff4655] animate-pulse"></span>
                         <span id="dragHint">CLIC = SELEZIONA • TRASCINA = SPOSTA • ANGOLI = RIDIMENSIONA • FRECCE = SPOSTA (MAIUSC ×10) • CANC = NASCONDI • CTRL+ROTELLA = ZOOM</span>
                     </div>
-                    <canvas id="graphicCanvas" class="cursor-default block"></canvas>
+                    <canvas id="graphicCanvas" class="cursor-default block" role="img" aria-label="Anteprima della grafica: trascina gli elementi per spostarli, frecce per spostarli di 1 pixel"></canvas>
                 </div>
             </div>
         </div>
@@ -4677,7 +4681,14 @@
                     setStatus(`Esportati ${saved.length} file ✓`);
                     window.omnia.revealFile(saved[0]);
                 } catch (err) {
-                    await showAlert('Esportazione non riuscita', err.message);
+                    if (/DIR_NON_AUTORIZZATA/.test(err.message)) {
+                        // cartella ricordata da una versione precedente: va riconfermata con il selettore di sistema
+                        try { localStorage.removeItem(OUTDIR_KEY); } catch (e) {}
+                        refreshOutDirLabel();
+                        await showAlert('Scegli di nuovo la cartella', 'Per sicurezza la cartella di export va confermata una volta. Premi Esporta di nuovo e scegline una.');
+                    } else {
+                        await showAlert('Esportazione non riuscita', err.message);
+                    }
                 }
                 return;
             }
@@ -4740,10 +4751,13 @@
                 reader.onload = (ev) => {
                     const img = new Image();
                     img.onload = () => {
-                        onLoaded(img);
-                        if (btnRemoveId) document.getElementById(btnRemoveId).classList.remove('hidden');
-                        renderGraphic();
-                        hideLoading();
+                        try {
+                            onLoaded(img);
+                            if (btnRemoveId) document.getElementById(btnRemoveId).classList.remove('hidden');
+                            renderGraphic();
+                        } finally {
+                            hideLoading();
+                        }
                     };
                     img.onerror = () => { hideLoading(); showAlert('Immagine non valida', 'Non riesco a leggere questo file come immagine.'); };
                     img.src = ev.target.result;
@@ -4858,7 +4872,10 @@
         const showAlert = (title, message) => openDialog({ title, message, okLabel: 'OK', showCancel: false });
 
         document.addEventListener('keydown', (e) => {
+            // durante un caricamento la tastiera e' bloccata; con un dialogo aperto restano solo Esc, Tab, Invio e Spazio
+            if (loadingCount > 0) { e.preventDefault(); e.stopImmediatePropagation(); return; }
             if (!dlgResolve) return;
+            if (e.key !== 'Escape' && e.key !== 'Tab' && e.key !== 'Enter' && e.key !== ' ') { e.stopImmediatePropagation(); return; }
             if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); dlgClose(false); }
             else if (e.key === 'Tab') {
                 const f = [...document.querySelectorAll('#dlgBack button')].filter(b => b.style.display !== 'none');
@@ -4927,8 +4944,11 @@
                 carouselCtx = null;
                 imgFx = Object.assign(defaultFx(), clone(core.fx || {}));
                 renderFxControls();
+                // campi assenti nel file (progetti vecchi): valore di default, non quello del progetto precedente
+                const defFields = DEFAULT_SNAP ? JSON.parse(DEFAULT_SNAP.core).fields : {};
                 FIELD_IDS.forEach(id => {
-                    const v = core.fields && core.fields[id];
+                    let v = core.fields && core.fields[id];
+                    if (v === undefined) v = defFields[id];
                     if (v !== undefined) document.getElementById(id).value = v;
                 });
 
@@ -5332,10 +5352,21 @@
             setStatus(`Esportati ${p.teams.length} team, ${p.sponsors.length} sponsor, ${data.library.length} immagini ✓`);
         }
 
-        function mergeByName(cur, inc) {
+        // Un preset importato deve avere forma valida e immagini solo come data URL (mai indirizzi esterni)
+        const isDataImg = (s) => s == null || (typeof s === 'string' && /^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,/i.test(s));
+        function validPresetItem(kind, item) {
+            if (!item || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 80) return false;
+            if (kind === 'teams') {
+                return Array.isArray(item.players) && item.players.length <= 20 && item.players.every(p => p && typeof p === 'object') && isDataImg(item.logo) && (item.tag == null || typeof item.tag === 'string');
+            }
+            if (kind === 'sponsors') return isDataImg(item.logo);
+            return typeof item.src === 'string' && isDataImg(item.src);
+        }
+
+        function mergeByName(cur, inc, kind) {
             let added = 0, updated = 0;
-            (inc || []).forEach(item => {
-                if (!item || typeof item.name !== 'string') return;
+            (Array.isArray(inc) ? inc : []).forEach(item => {
+                if (!validPresetItem(kind, item)) return;
                 const i = cur.findIndex(x => x.name.toLowerCase() === item.name.toLowerCase());
                 if (i >= 0) { cur[i] = item; updated++; } else { cur.push(item); added++; }
             });
@@ -5346,8 +5377,11 @@
             if (!data || data.app !== 'omnia-graphics-presets') throw new Error('formato');
             const p = loadPresets();
             const lib = loadLibrary();
-            const a = mergeByName(p.teams, data.teams), b = mergeByName(p.sponsors, data.sponsors), c = mergeByName(lib, data.library);
-            if (!storePresets(p) || !storeLibrary(lib)) throw new Error('spazio');
+            const oldP = JSON.stringify(p), oldLib = JSON.stringify(loadLibrary());
+            const a = mergeByName(p.teams, data.teams, 'teams'), b = mergeByName(p.sponsors, data.sponsors, 'sponsors'), c = mergeByName(lib, data.library, 'library');
+            // tutto o niente: se la libreria non entra, si annulla anche il salvataggio dei preset
+            if (!storeLibrary(lib)) throw new Error('spazio');
+            if (!storePresets(p)) { try { localStorage.setItem(LIB_KEY, oldLib); } catch (e) {} throw new Error('spazio'); }
             refreshPresetSelects();
             renderLibraryUI();
             const tot = (k) => k.added + k.updated;
@@ -5426,14 +5460,52 @@
 
         function showWelcome() {
             renderRecents();
+            welcomeReturnFocus = document.activeElement;
             document.getElementById('welcome').classList.remove('hidden');
+            const first = document.getElementById('welcomeContinue');
+            if (first) first.focus();
         }
-        function closeWelcome() { document.getElementById('welcome').classList.add('hidden'); }
+        function closeWelcome() {
+            document.getElementById('welcome').classList.add('hidden');
+            if (welcomeReturnFocus && welcomeReturnFocus.focus && document.contains(welcomeReturnFocus)) { try { welcomeReturnFocus.focus(); } catch (e) {} }
+            welcomeReturnFocus = null;
+        }
+        let welcomeReturnFocus = null;
         async function welcomeNew() {
             closeWelcome();
             await newProject();
         }
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeWelcome(); });
+
+        // ---- Accessibilita': ogni campo ha un nome per gli screen reader ----
+        function autoLabelControls(root) {
+            (root || document).querySelectorAll('input:not([type=file]):not([type=hidden]),select,textarea').forEach(c => {
+                if (c.getAttribute('aria-label') || c.getAttribute('aria-labelledby') || c.closest('label') || (c.id && document.querySelector(`label[for="${c.id}"]`))) return;
+                let text = '';
+                // 1) etichetta immediatamente prima, nello stesso contenitore
+                let p = c.previousElementSibling;
+                while (p && !text) { if (p.tagName === 'LABEL' || p.tagName === 'SPAN' || p.tagName === 'DIV') text = (p.textContent || '').trim(); p = p.previousElementSibling; }
+                // 2) prima etichetta del contenitore (anche piu' in alto, fino alla sezione)
+                if (!text) {
+                    let box = c.parentElement;
+                    for (let i = 0; i < 4 && box && !text; i++, box = box.parentElement) {
+                        const l = box.querySelector(':scope > label, :scope > div > label');
+                        if (l) text = l.textContent.trim();
+                    }
+                }
+                const pm = (c.getAttribute('oninput') || c.getAttribute('onchange') || '').match(/updatePlayer\((\d+),\s*(\d+),\s*'(\w+)'/);
+                if (pm) text = `Team ${+pm[1] + 1}, giocatore ${+pm[2] + 1}: ${pm[3] === 'role' ? 'ruolo' : pm[3] === 'name' ? 'nome' : pm[3]}`;
+                text = text || c.placeholder || c.title || '';
+                if (text) c.setAttribute('aria-label', text.replace(/\s+/g, ' ').slice(0, 80));
+            });
+        }
+        (function watchLabels() {
+            const aside = document.querySelector('aside');
+            if (!aside) return;
+            let t = null;
+            new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => autoLabelControls(aside), 60); }).observe(aside, { childList: true, subtree: true });
+            autoLabelControls(aside);
+        })();
 
         // ---- Sezioni della sidebar: ricorda aperte/chiuse ----
         function initSections() {
